@@ -1,27 +1,48 @@
 pluginManagement {
+    val preferOfficialRepositories = System.getenv("CI").equals("true", ignoreCase = true)
     repositories {
+        if (preferOfficialRepositories) {
+            google {
+                content {
+                    includeGroupByRegex("com\\.android.*")
+                    includeGroupByRegex("com\\.google.*")
+                    includeGroupByRegex("androidx.*")
+                }
+            }
+            mavenCentral()
+            gradlePluginPortal()
+        }
         maven("https://maven.aliyun.com/repository/gradle-plugin")
         maven("https://maven.aliyun.com/repository/google")
         maven("https://maven.aliyun.com/repository/public")
-        google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
+        if (!preferOfficialRepositories) {
+            google {
+                content {
+                    includeGroupByRegex("com\\.android.*")
+                    includeGroupByRegex("com\\.google.*")
+                    includeGroupByRegex("androidx.*")
+                }
             }
+            mavenCentral()
+            gradlePluginPortal()
         }
-        mavenCentral()
         maven { url = uri("https://jitpack.io") }
-        gradlePluginPortal()
     }
 }
 dependencyResolutionManagement {
+    val preferOfficialRepositories = System.getenv("CI").equals("true", ignoreCase = true)
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        if (preferOfficialRepositories) {
+            google()
+            mavenCentral()
+        }
         maven("https://maven.aliyun.com/repository/google")
         maven("https://maven.aliyun.com/repository/public")
-        google()
-        mavenCentral()
+        if (!preferOfficialRepositories) {
+            google()
+            mavenCentral()
+        }
         maven { url = uri("https://jitpack.io") }
     }
 }
