@@ -105,8 +105,6 @@ import moe.ouom.neriplayer.data.ltw.playback.shouldShowListenTogetherPreviewClip
 import moe.ouom.neriplayer.core.player.host.PlayerFeedback
 import kotlin.time.Duration.Companion.milliseconds
 
-private val playbackAutoSkipPolicy = PlaybackAutoSkipPolicy(BiliPlaybackAutoSkipTargets)
-
 internal fun PlayerManager.stopPlaybackPreservingQueueImpl(clearMediaUrl: Boolean = false) {
     serverRecoveryPosition = null
     logQueueStopStart(clearMediaUrl)

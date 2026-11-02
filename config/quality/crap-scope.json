@@ -720,19 +720,6 @@
         "releasePlayerAfterFailedInitialization",
         "rollbackInitializationStep",
         "finishInitializationAttempt",
-        "releaseImpl",
-        "logPlaybackReleaseBegin",
-        "cancelJobForRelease",
-        "preparePlaybackRelease",
-        "stopPlaybackForRelease",
-        "releaseUsbSessionsAndJobs",
-        "releaseMediaJobsAndLyrics",
-        "releasePlayerEngine",
-        "releasePlayerIfInitialized",
-        "closeConditionalHttpFactory",
-        "releasePlaybackScopes",
-        "clearPlaybackStateAfterRelease",
-        "finishPlaybackRelease",
         "handleAudioBecomingNoisyImpl",
         "handleUsbExclusivePlaybackSettingChanged",
         "handleUsbExclusivePreferencesChanged",
@@ -751,6 +738,26 @@
         "clearUsbExclusiveInterruptedPlaybackIntent",
         "applyUsbExclusivePlaybackPolicy",
         "scheduleUsbAudioSinkReconfiguration"
+      ]
+    },
+    {
+      "source": "moe/ouom/neriplayer/core/player/lifecycle/PlayerManagerReleaseExtensions.kt",
+      "class": "moe.ouom.neriplayer.core.player.lifecycle.PlayerManagerReleaseExtensionsKt",
+      "methods": [
+        "releaseImpl",
+        "logPlaybackReleaseBegin",
+        "cancelJobForRelease",
+        "preparePlaybackRelease",
+        "stopPlaybackForRelease",
+        "releaseUsbSessionsAndJobs",
+        "releaseMediaJobsAndLyrics",
+        "stopAudioOutputRouteMonitor",
+        "releasePlayerEngine",
+        "releasePlayerIfInitialized",
+        "closeConditionalHttpFactory",
+        "releasePlaybackScopes",
+        "clearPlaybackStateAfterRelease",
+        "finishPlaybackRelease"
       ]
     },
     {
@@ -788,7 +795,6 @@
         "pauseInternal",
         "startProgressUpdates",
         "maybePersistLongFormPlaybackProgress",
-        "stopPlaybackPreservingQueueImpl",
         "expectedPauseDuration",
         "pausePlayerOutput",
         "pauseLyriconIfEnabled",
@@ -816,10 +822,16 @@
         "reportProgressStats",
         "applyPlaybackAutoSkip",
         "showPlaybackAutoSkipPrompt",
+        "<clinit>"
+      ]
+    },
+    {
+      "source": "moe/ouom/neriplayer/core/player/playback/PlayerManagerQueueStopExtensions.kt",
+      "class": "moe.ouom.neriplayer.core.player.playback.PlayerManagerQueueStopExtensionsKt",
+      "methods": [
+        "stopPlaybackPreservingQueueImpl",
+        "stopPlaybackPreservingQueueImpl$default",
         "logQueueStopStart",
-        "currentSongNameForProgressLog",
-        "hasQueueStopMediaUrl",
-        "hasNonBlankMediaUrl",
         "cancelActivePlayForQueueStop",
         "cancelPrefetchForQueueStop",
         "stopPlayerForQueuePreservation",
@@ -828,7 +840,11 @@
         "restoreNonemptyQueueAfterStop",
         "clearQueueStopMediaUrl",
         "logQueueStopComplete",
-        "<clinit>"
+        "currentSongNameForProgressLog",
+        "hasQueueStopMediaUrl",
+        "hasNonBlankMediaUrl",
+        "stopPlaybackImmediatelyImpl",
+        "stopPlaybackImmediatelyImpl$default"
       ]
     },
     {
