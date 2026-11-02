@@ -123,7 +123,7 @@ class AmllTtmlClient(
     companion object {
         private const val TAG = "AmllTtmlClient"
         private const val DEFAULT_BASE_URL = "https://amlldb.bikonoo.com"
-        private const val USER_AGENT = "NeriPlayer/1.0 (https://github.com/cwuom/NeriPlayer)"
+        private const val USER_AGENT = "NeriPlayer/1.0 (https://github.com/YGHFv/NeriPlayer)"
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
     }
 }

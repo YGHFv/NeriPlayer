@@ -9,11 +9,11 @@
 <p><strong>🖥️ Looking for the PC version? <a href="https://github.com/cwuom/NeriPlayer-Desktop">Visit the NeriPlayer Desktop repository →</a></strong></p>
 
 <p>
-  <a href="https://github.com/cwuom/NeriPlayer/releases">
-    <img alt="Downloads" src="https://img.shields.io/github/downloads/cwuom/NeriPlayer/total?style=social" />
+  <a href="https://github.com/YGHFv/NeriPlayer/releases">
+    <img alt="Downloads" src="https://img.shields.io/github/downloads/YGHFv/NeriPlayer/total?style=social" />
   </a>
-  <a href="https://github.com/cwuom/NeriPlayer/releases">
-    <img alt="Release" src="https://img.shields.io/github/v/release/cwuom/NeriPlayer?include_prereleases&label=Release" />
+  <a href="https://github.com/YGHFv/NeriPlayer/releases">
+    <img alt="Release" src="https://img.shields.io/github/v/release/YGHFv/NeriPlayer?include_prereleases&label=Release" />
   </a>
   <img alt="Android 9+" src="https://img.shields.io/badge/Android-9%2B-3DDC84?logo=android&logoColor=white" />
   <a href="https://t.me/ouom_pub">
@@ -40,8 +40,6 @@ user-owned data.
 </p>
 
 🛠️ <strong>Active development</strong>
-
-<a href="https://trendshift.io/repositories/23906" target="_blank"><img src="https://trendshift.io/api/badge/repositories/23906" alt="cwuom%2FNeriPlayer | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
 </div>
 
@@ -189,7 +187,7 @@ See the [API contract](docs/music-server-api.md) for protocol and client behavio
 
 ### a. Download a Release build (recommended)
 
-Go to [GitHub Releases](https://github.com/cwuom/NeriPlayer/releases) and download the APK matching your device architecture:
+Go to [GitHub Releases](https://github.com/YGHFv/NeriPlayer/releases) and download the APK matching your device architecture:
 
 | APK Architecture (ABI) | Target Devices |
 | :--- | :--- |
@@ -198,20 +196,24 @@ Go to [GitHub Releases](https://github.com/cwuom/NeriPlayer/releases) and downlo
 | `x86` / `x86_64` | Desktop emulators, Intel devices, or Chromebooks |
 
 > [!IMPORTANT]
-> The Release channel is not a strict stable channel. Builds are usually pushed manually after a batch of features is completed and may still contain unexposed issues.
+> After a push to `master`, CI automatically builds signed APKs and creates a GitHub Release
+> only after every required gate passes. These builds may still expose unresolved issues;
+> the manual Release workflow remains available for republishing or verification.
+> Maintainers can find signing setup in [.github/RELEASE_SIGNING.md](./.github/RELEASE_SIGNING.md).
 
 ### b. Download a CI build
 
-1. Go to [GitHub Actions](https://github.com/cwuom/NeriPlayer/actions), download the Artifacts from the latest successful build, and extract them.
+1. Go to [GitHub Actions](https://github.com/YGHFv/NeriPlayer/actions), download the Artifacts from the latest successful build, and extract them.
 2. Or visit [NeriPlayer CI Builds](https://t.me/neriplayer_ci).
 
-> The master CI artifact is `arm64-v8a` by default; the manual Release workflow builds multi-ABI APKs.
+> Pushes to `master` in the canonical repository publish signed `arm64-v8a`, `armeabi-v7a`,
+> `x86`, and `x86_64` APKs. Pull requests and forks only produce unsigned verification builds.
 
 ### c. Local build
 
 1. Clone the repository and initialize submodules:
    ```bash
-   git clone --recursive https://github.com/cwuom/NeriPlayer.git
+   git clone --recursive https://github.com/YGHFv/NeriPlayer.git
    cd NeriPlayer
    ```
 2. Install JDK 17 and open the project with the latest stable Android Studio. Running
@@ -326,7 +328,7 @@ feedback.
 - [ ] Continued expansion of third-party playback, library pages, and account support
 - [ ] More complete QQ Music account support, library data, and a more stable auth flow
 
-Shipped work is tracked in [Releases](https://github.com/cwuom/NeriPlayer/releases) and
+Shipped work is tracked in [Releases](https://github.com/YGHFv/NeriPlayer/releases) and
 the commit history.
 
 ---
@@ -335,7 +337,7 @@ the commit history.
 
 - Enable developer mode first (tap the **version number** 7 times in Settings). It turns
   on plain file logging, and crash logs are written separately.
-- Open an [issue](https://github.com/cwuom/NeriPlayer/issues) with the OS version, device
+- Open an [issue](https://github.com/YGHFv/NeriPlayer/issues) with the OS version, device
   model, app version, reproduction steps, and relevant logs.
 - Filter logs on Windows: `adb logcat | findstr NeriPlayer`
 - Filter logs on Linux / macOS: `adb logcat | grep NeriPlayer`
@@ -416,10 +418,10 @@ the commit history.
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=cwuom%2Fneriplayer&type=timeline&legend=bottom-right">
+<a href="https://www.star-history.com/?repos=YGHFv%2Fneriplayer&type=timeline&legend=bottom-right">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=cwuom/neriplayer&type=timeline&theme=dark&legend=bottom-right" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=cwuom/neriplayer&type=timeline&legend=bottom-right" />
-    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=cwuom/neriplayer&type=timeline&legend=bottom-right" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=YGHFv/neriplayer&type=timeline&theme=dark&legend=bottom-right" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=YGHFv/neriplayer&type=timeline&legend=bottom-right" />
+    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=YGHFv/neriplayer&type=timeline&legend=bottom-right" />
   </picture>
 </a>

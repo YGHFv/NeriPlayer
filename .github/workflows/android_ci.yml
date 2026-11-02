@@ -384,7 +384,7 @@ jobs:
       NERI_BUILD_UUID: ${{ needs.ci-tooling.outputs.build_uuid }}
       NERI_BUILD_TIMESTAMP: ${{ needs.ci-tooling.outputs.build_timestamp }}
       NERI_BUILD_VERSION_TIMESTAMP: ${{ needs.ci-tooling.outputs.build_version_timestamp }}
-      NERI_SIGNING_MODE: ${{ github.repository == 'cwuom/NeriPlayer' && github.event_name == 'push' && github.ref == 'refs/heads/master' && 'signed' || 'unsigned' }}
+      NERI_SIGNING_MODE: ${{ github.repository == 'YGHFv/NeriPlayer' && github.event_name == 'push' && github.ref == 'refs/heads/master' && 'signed' || 'unsigned' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -403,13 +403,25 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' || github.ref != format('refs/heads/{0}', github.event.repository.default_branch) }}
 
-      - name: Decode keystore
+      - name: Decode and validate keystore
         if: env.NERI_SIGNING_MODE == 'signed'
         run: |
+          set -euo pipefail
+          : "${KEYSTORE_B64:?KEYSTORE_B64 repository secret is required}"
+          : "${KEYSTORE_PASSWORD:?KEYSTORE_PASSWORD repository secret is required}"
+          : "${KEY_ALIAS:?KEY_ALIAS repository secret is required}"
+          : "${KEY_PASSWORD:?KEY_PASSWORD repository secret is required}"
           mkdir -p app
-          printf '%s' "$KEYSTORE_B64" | base64 -d > app/neri.jks
+          printf '%s' "$KEYSTORE_B64" | tr -d '\r\n\t ' | base64 --decode > app/neri.jks
+          keytool -list \
+            -keystore app/neri.jks \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -alias "$KEY_ALIAS" >/dev/null
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Grant execute permission
         run: chmod +x gradlew
@@ -432,9 +444,9 @@ jobs:
         env:
           ORG_GRADLE_PROJECT_KEYSTORE_FILE: neri.jks
           ORG_GRADLE_PROJECT_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          ORG_GRADLE_PROJECT_KEY_ALIAS: key0
+          ORG_GRADLE_PROJECT_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           ORG_GRADLE_PROJECT_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew :app:assembleRelease --warning-mode all --stacktrace
+        run: ./gradlew :app:assembleRelease -PbuildAllReleaseAbis=true --warning-mode all --stacktrace
 
       - name: Verify and stage Release artifacts
         run: >-
@@ -526,7 +538,7 @@ jobs:
       - name: Publish CI APKs after all gates pass
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ github.repository == 'cwuom/NeriPlayer' && github.event_name == 'push' && github.ref == 'refs/heads/master' && 'neri-apk' || 'neri-apk-unsigned' }}
+          name: ${{ github.repository == 'YGHFv/NeriPlayer' && github.event_name == 'push' && github.ref == 'refs/heads/master' && 'neri-apk' || 'neri-apk-unsigned' }}
           path: build/release-artifacts/*
           if-no-files-found: error
           compression-level: 0
@@ -544,7 +556,7 @@ jobs:
     needs:
       - build
     runs-on: ubuntu-latest
-    if: ${{ success() && github.repository == 'cwuom/NeriPlayer' && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+    if: ${{ success() && github.repository == 'YGHFv/NeriPlayer' && github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -560,7 +572,8 @@ jobs:
       - name: Find APK file
         id: find_apk
         run: |
-          apk=$(ls artifacts/*.apk)
+          apk=$(find artifacts -maxdepth 1 -type f -name '*-arm64-v8a.apk' -print -quit)
+          test -n "$apk"
           echo "apk_path=$apk" >> $GITHUB_OUTPUT
 
       - name: Send APK via Telegram API
@@ -593,3 +606,61 @@ jobs:
             -F document=@"${APK_PATH}" \
             -F caption="${caption}" \
             -F parse_mode=HTML
+
+  publish-github-release:
+    name: Publish GitHub Release
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: ${{ success() && github.repository == 'YGHFv/NeriPlayer' && github.event_name == 'push' && github.ref == 'refs/heads/master' && !startsWith(github.event.head_commit.message, '[skip ci]') }}
+    permissions:
+      contents: write
+    steps:
+      - name: Download signed APK artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: neri-apk
+          path: release-assets
+
+      - name: Verify signing identity and checksums
+        run: |
+          set -euo pipefail
+          signing_mode="$(python3 -c 'import json; print(json.load(open("release-assets/build-metadata.json"))["signing_mode"])')"
+          test "$signing_mode" = "signed"
+          (cd release-assets && sha256sum --check --strict SHA256SUMS.txt)
+
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+          test -n "$sdk_root"
+          apksigner="$(find "$sdk_root/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$apksigner"
+          for apk in release-assets/*.apk; do
+            "$apksigner" verify --verbose --print-certs "$apk" >/dev/null
+          done
+
+      - name: Determine release tag
+        id: release
+        run: |
+          set -euo pipefail
+          version="$(python3 -c 'import json; print(json.load(open("release-assets/build-metadata.json"))["build_version"])')"
+          test -n "$version"
+          echo "tag=NeriPlayer-${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          files=(
+            release-assets/*.apk
+            release-assets/build-metadata.json
+            release-assets/build-metadata.txt
+            release-assets/SHA256SUMS.txt
+          )
+          gh release create "$TAG_NAME" "${files[@]}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG_NAME" \
+            --generate-notes \
+            --latest

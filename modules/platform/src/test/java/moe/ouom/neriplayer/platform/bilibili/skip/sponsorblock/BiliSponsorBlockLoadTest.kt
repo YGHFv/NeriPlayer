@@ -42,7 +42,7 @@ class BiliSponsorBlockLoadTest {
         assertEquals(listOf(BiliSponsorBlockSegment("kept", "sponsor", 1_500L, 4_000L)), segments)
         val request = http.requests.single()
         assertEquals("https://bsbsb.top/api/skipSegments/5759", request.url.toString())
-        assertEquals("https://github.com/cwuom/NeriPlayer", request.header("Origin"))
+        assertEquals("https://github.com/YGHFv/NeriPlayer", request.header("Origin"))
         assertEquals("NeriPlayer-Android", request.header("X-Ext-Version"))
         assertEquals("NeriPlayer Android", request.header("User-Agent"))
     }

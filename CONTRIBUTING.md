@@ -112,7 +112,7 @@
 
 1. 克隆仓库：
    ```bash
-   git clone --recursive https://github.com/cwuom/NeriPlayer.git
+   git clone --recursive https://github.com/YGHFv/NeriPlayer.git
    cd NeriPlayer
    ```
 2. 构建调试版：
@@ -1005,8 +1005,8 @@ Commit 信息建议遵循 Conventional Commits，
 
 ### 沟通方式 / Communication
 
-- [Issues](https://github.com/cwuom/NeriPlayer/issues)：缺陷、功能请求与改进建议，每个 Issue 只提交一个问题
-- [Discussions Q&A](https://github.com/cwuom/NeriPlayer/discussions/categories/q-a)：使用方法、设置与兼容性咨询
+- [Issues](https://github.com/YGHFv/NeriPlayer/issues)：缺陷、功能请求与改进建议，每个 Issue 只提交一个问题
+- [Discussions Q&A](https://github.com/YGHFv/NeriPlayer/discussions/categories/q-a)：使用方法、设置与兼容性咨询
 - [README.md](./README.md)：功能与使用说明
 - [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)：社区行为准则
 

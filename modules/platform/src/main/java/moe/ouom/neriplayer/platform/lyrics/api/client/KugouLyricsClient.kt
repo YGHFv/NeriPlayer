@@ -94,6 +94,6 @@ class KugouLyricsClient(private val okHttpClient: OkHttpClient) {
     companion object {
         private const val TAG = "KugouLyricsClient"
         private const val SEARCH_LIMIT = 8
-        private const val USER_AGENT = "NeriPlayer/1.0 (https://github.com/cwuom/NeriPlayer)"
+        private const val USER_AGENT = "NeriPlayer/1.0 (https://github.com/YGHFv/NeriPlayer)"
     }
 }

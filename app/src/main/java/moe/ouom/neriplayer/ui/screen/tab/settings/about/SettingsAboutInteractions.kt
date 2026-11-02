@@ -65,7 +65,7 @@ private class SettingsAboutPageActions(
     }
 
     fun onOpenGitHubRepo() {
-        if (!context.tryStartActivity(Intent(Intent.ACTION_VIEW, "https://github.com/cwuom/NeriPlayer".toUri()))) {
+        if (!context.tryStartActivity(Intent(Intent.ACTION_VIEW, "https://github.com/YGHFv/NeriPlayer".toUri()))) {
             onShowMessage(resources.getString(CoreCommonR.string.error_no_app_for_action))
         }
     }

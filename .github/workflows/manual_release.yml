@@ -36,8 +36,8 @@ jobs:
           TEST_RELEASE: ${{ inputs.test_release }}
         run: |
           set -euo pipefail
-          if [[ "$GITHUB_REPOSITORY" != "cwuom/NeriPlayer" && "$TEST_RELEASE" != "true" ]]; then
-            echo "::error::Only unsigned test releases are allowed outside cwuom/NeriPlayer."
+          if [[ "$GITHUB_REPOSITORY" != "YGHFv/NeriPlayer" && "$TEST_RELEASE" != "true" ]]; then
+            echo "::error::Only unsigned test releases are allowed outside YGHFv/NeriPlayer."
             exit 1
           fi
 
@@ -113,11 +113,21 @@ jobs:
         if: ${{ !inputs.test_release }}
         run: |
           set -euo pipefail
-          test -n "$KEYSTORE_B64"
+          : "${KEYSTORE_B64:?KEYSTORE_B64 repository secret is required}"
+          : "${KEYSTORE_PASSWORD:?KEYSTORE_PASSWORD repository secret is required}"
+          : "${KEY_ALIAS:?KEY_ALIAS repository secret is required}"
+          : "${KEY_PASSWORD:?KEY_PASSWORD repository secret is required}"
           mkdir -p app
-          printf '%s' "$KEYSTORE_B64" | base64 -d > app/neri.jks
+          printf '%s' "$KEYSTORE_B64" | tr -d '\r\n\t ' | base64 --decode > app/neri.jks
+          keytool -list \
+            -keystore app/neri.jks \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -alias "$KEY_ALIAS" >/dev/null
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Grant execute permission
         run: chmod +x gradlew
@@ -160,7 +170,7 @@ jobs:
         env:
           ORG_GRADLE_PROJECT_KEYSTORE_FILE: neri.jks
           ORG_GRADLE_PROJECT_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          ORG_GRADLE_PROJECT_KEY_ALIAS: key0
+          ORG_GRADLE_PROJECT_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           ORG_GRADLE_PROJECT_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           ./gradlew :app:assembleRelease \

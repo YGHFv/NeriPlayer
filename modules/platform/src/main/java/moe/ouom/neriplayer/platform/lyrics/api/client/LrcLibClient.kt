@@ -50,7 +50,7 @@ class LrcLibClient(private val okHttpClient: OkHttpClient) {
     private companion object {
         const val TAG = "LrcLibClient"
         const val BASE_URL = "https://lrclib.net/api"
-        const val USER_AGENT = "NeriPlayer/1.0 (https://github.com/cwuom/NeriPlayer)"
+        const val USER_AGENT = "NeriPlayer/1.0 (https://github.com/YGHFv/NeriPlayer)"
     }
 }
 

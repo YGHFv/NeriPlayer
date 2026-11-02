@@ -125,7 +125,7 @@ for the new behavior.
 
 1. Clone the repository:
    ```bash
-   git clone --recursive https://github.com/cwuom/NeriPlayer.git
+   git clone --recursive https://github.com/YGHFv/NeriPlayer.git
    cd NeriPlayer
    ```
 2. Build the Debug APK:
@@ -1190,8 +1190,8 @@ Commit messages should follow Conventional Commits when possible, for example:
 
 ### Communication
 
-- [Issues](https://github.com/cwuom/NeriPlayer/issues): bugs, feature requests, and improvements, with one topic per issue
-- [Discussions Q&A](https://github.com/cwuom/NeriPlayer/discussions/categories/q-a): usage, settings, and compatibility questions
+- [Issues](https://github.com/YGHFv/NeriPlayer/issues): bugs, feature requests, and improvements, with one topic per issue
+- [Discussions Q&A](https://github.com/YGHFv/NeriPlayer/discussions/categories/q-a): usage, settings, and compatibility questions
 - [README_EN.md](./README_EN.md): features and usage
 - [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md): community code of conduct
 

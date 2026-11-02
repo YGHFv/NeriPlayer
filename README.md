@@ -9,11 +9,11 @@
 <p><strong>🖥️ 在找 PC 端吗？ <a href="https://github.com/cwuom/NeriPlayer-Desktop">前往 NeriPlayer Desktop 仓库 →</a></strong></p>
 
 <p>
-  <a href="https://github.com/cwuom/NeriPlayer/releases">
-    <img alt="Downloads" src="https://img.shields.io/github/downloads/cwuom/NeriPlayer/total?style=social" />
+  <a href="https://github.com/YGHFv/NeriPlayer/releases">
+    <img alt="Downloads" src="https://img.shields.io/github/downloads/YGHFv/NeriPlayer/total?style=social" />
   </a>
-  <a href="https://github.com/cwuom/NeriPlayer/releases">
-    <img alt="Release" src="https://img.shields.io/github/v/release/cwuom/NeriPlayer?include_prereleases&label=Release" />
+  <a href="https://github.com/YGHFv/NeriPlayer/releases">
+    <img alt="Release" src="https://img.shields.io/github/v/release/YGHFv/NeriPlayer?include_prereleases&label=Release" />
   </a>
   <img alt="Android 9+" src="https://img.shields.io/badge/Android-9%2B-3DDC84?logo=android&logoColor=white" />
   <a href="https://t.me/ouom_pub">
@@ -38,8 +38,6 @@
 </p>
 
 🛠️ <strong>Active development / 持续迭代中</strong>
-
-<a href="https://trendshift.io/repositories/23906" target="_blank"><img src="https://trendshift.io/api/badge/repositories/23906" alt="cwuom%2FNeriPlayer | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
 </div>
 
@@ -184,7 +182,7 @@ NeriPlayer 是一个基于 **Jetpack Compose + Media3** 的原生 Android 音频
 
 ### a. 下载 Release 版本（推荐）
 
-前往 [GitHub Releases](https://github.com/cwuom/NeriPlayer/releases) 下载对应架构的 APK：
+前往 [GitHub Releases](https://github.com/YGHFv/NeriPlayer/releases) 下载对应架构的 APK：
 
 | APK 架构 (ABI) | 适用设备 |
 | :--- | :--- |
@@ -193,20 +191,23 @@ NeriPlayer 是一个基于 **Jetpack Compose + Media3** 的原生 Android 音频
 | `x86` / `x86_64` | 桌面模拟器、Intel 架构设备或 Chromebook |
 
 > [!IMPORTANT]
-> Release 渠道不是严格意义上的稳定通道。版本通常在完成一批功能后手动发布，仍可能包含未充分暴露的问题。
+> 推送 `master` 后，CI 会在全部门禁通过后自动构建签名 APK 并创建 GitHub Release。
+> 这些版本仍可能包含未充分暴露的问题；需要补发或调试时也可手动运行 Release 工作流。
+> 维护者签名配置见 [.github/RELEASE_SIGNING.md](./.github/RELEASE_SIGNING.md)。
 
 ### b. 下载 CI 版本
 
-1. 前往 [GitHub Actions](https://github.com/cwuom/NeriPlayer/actions) 下载最近一次成功构建的 Artifacts 并解压。
+1. 前往 [GitHub Actions](https://github.com/YGHFv/NeriPlayer/actions) 下载最近一次成功构建的 Artifacts 并解压。
 2. 或访问 Telegram 频道 [NeriPlayer CI Builds](https://t.me/neriplayer_ci)。
 
-> master 分支 CI 默认上传 `arm64-v8a` APK；手动 Release 流程会构建多 ABI APK。
+> 正式仓库的 `master` 推送会自动发布 `arm64-v8a`、`armeabi-v7a`、`x86` 与 `x86_64`
+> 四个签名 APK；Pull Request 和 fork 仅生成未签名验证包。
 
 ### c. 本地构建
 
 1. 克隆仓库并初始化子模块：
    ```bash
-   git clone --recursive https://github.com/cwuom/NeriPlayer.git
+   git clone --recursive https://github.com/YGHFv/NeriPlayer.git
    cd NeriPlayer
    ```
 2. 安装 JDK 17，用最新稳定版 Android Studio 打开并同步依赖；
@@ -309,7 +310,7 @@ NeriPlayer 支持把本地元数据同步到 **用户自己的** GitHub 仓库�
 - [ ] 第三方平台播放、库页和账号能力持续扩展
 - [ ] 更完整的 QQ 音乐账号能力、库页数据与更稳定授权链路
 
-已落地功能见 [Releases](https://github.com/cwuom/NeriPlayer/releases) 与提交历史。
+已落地功能见 [Releases](https://github.com/YGHFv/NeriPlayer/releases) 与提交历史。
 
 ---
 
@@ -317,7 +318,7 @@ NeriPlayer 支持把本地元数据同步到 **用户自己的** GitHub 仓库�
 
 - 反馈前建议先开启开发者模式（设置页点击 **版本号** 7 次），应用会启用普通文件日志，
   崩溃日志会单独落盘。
-- 前往 [Issues](https://github.com/cwuom/NeriPlayer/issues)，提供系统版本、机型、
+- 前往 [Issues](https://github.com/YGHFv/NeriPlayer/issues)，提供系统版本、机型、
   应用版本、复现步骤与关键日志。
 - Windows 过滤日志：`adb logcat | findstr NeriPlayer`
 - Linux / macOS 过滤日志：`adb logcat | grep NeriPlayer`
@@ -388,10 +389,10 @@ NeriPlayer 支持把本地元数据同步到 **用户自己的** GitHub 仓库�
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=cwuom%2Fneriplayer&type=timeline&legend=bottom-right">
+<a href="https://www.star-history.com/?repos=YGHFv%2Fneriplayer&type=timeline&legend=bottom-right">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=cwuom/neriplayer&type=timeline&theme=dark&legend=bottom-right" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=cwuom/neriplayer&type=timeline&legend=bottom-right" />
-    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=cwuom/neriplayer&type=timeline&legend=bottom-right" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=YGHFv/neriplayer&type=timeline&theme=dark&legend=bottom-right" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=YGHFv/neriplayer&type=timeline&legend=bottom-right" />
+    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=YGHFv/neriplayer&type=timeline&legend=bottom-right" />
   </picture>
 </a>

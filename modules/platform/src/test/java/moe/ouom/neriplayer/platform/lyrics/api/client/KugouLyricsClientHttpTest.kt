@@ -50,7 +50,7 @@ class KugouLyricsClientHttpTest {
         assertEquals("/api/v3/search/song", request.url.encodedPath)
         assertEquals("爱你 陈芳语", request.url.queryParameter("keyword"))
         assertEquals("8", request.url.queryParameter("pagesize"))
-        assertEquals("NeriPlayer/1.0 (https://github.com/cwuom/NeriPlayer)", request.header("User-Agent"))
+        assertEquals("NeriPlayer/1.0 (https://github.com/YGHFv/NeriPlayer)", request.header("User-Agent"))
     }
 
     @Test

@@ -162,7 +162,7 @@ Recommended notice / 推荐展示格式：
 
 ```text
 This product uses native source code from NeriPlayer.
-Project: https://github.com/cwuom/NeriPlayer
+Project: https://github.com/YGHFv/NeriPlayer
 Original author: cwuom / ouom
 ```
 

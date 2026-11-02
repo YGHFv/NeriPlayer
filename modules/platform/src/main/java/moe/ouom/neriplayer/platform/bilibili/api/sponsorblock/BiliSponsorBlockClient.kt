@@ -38,7 +38,7 @@ class BiliSponsorBlockClient(okHttpClient: OkHttpClient) {
     private companion object {
         const val TAG = "BiliSponsorBlock"
         const val API_URL = "https://bsbsb.top/api/skipSegments/"
-        const val CLIENT_ORIGIN = "https://github.com/cwuom/NeriPlayer"
+        const val CLIENT_ORIGIN = "https://github.com/YGHFv/NeriPlayer"
         const val CLIENT_VERSION = "NeriPlayer-Android"
         const val USER_AGENT = "NeriPlayer Android"
         const val CALL_TIMEOUT_MS = 3_000L
