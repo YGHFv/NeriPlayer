@@ -1,4 +1,4 @@
-package moe.ouom.neriplayer.platform.search.api.client
+package moe.ouom.neriplayer.platform.qqmusic.api.search
 
 import java.io.IOException
 import java.util.concurrent.CopyOnWriteArrayList

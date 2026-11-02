@@ -1,4 +1,4 @@
-package moe.ouom.neriplayer.platform.search.api.client
+package moe.ouom.neriplayer.platform.qqmusic.api.search
 
 /*
  * NeriPlayer - A unified Android player for streaming music and videos from multiple online platforms.
@@ -19,7 +19,7 @@ package moe.ouom.neriplayer.platform.search.api.client
  * along with this software.
  * If not, see <https://www.gnu.org/licenses/>.
  *
- * File: moe.ouom.neriplayer.platform.search.api.client/QQMusicSearchApi
+ * File: moe.ouom.neriplayer.platform.qqmusic.api.search/QQMusicSearchApi
  * Created: 2025/8/17
  */
 
@@ -31,7 +31,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import moe.ouom.neriplayer.data.model.qqmusic.auth.QQMusicAuthBundle
-import moe.ouom.neriplayer.platform.qqmusic.api.profile.toCookieHeader
 import moe.ouom.neriplayer.platform.search.api.NativeLyricSearchApi
 import moe.ouom.neriplayer.platform.search.api.codec.decodeQQMusicLyricPayload
 import moe.ouom.neriplayer.platform.search.api.codec.stripUntranslatedPlaceholderLines
@@ -508,6 +507,9 @@ private fun JSONObject.firstNonBlank(vararg keys: String): String? {
     }
     return null
 }
+
+private fun Map<String, String>.toCookieHeader(): String =
+    entries.joinToString("; ") { (key, value) -> "$key=$value" }
 
 private fun JSONObject.flexibleLong(vararg keys: String): Long {
     keys.forEach { key ->

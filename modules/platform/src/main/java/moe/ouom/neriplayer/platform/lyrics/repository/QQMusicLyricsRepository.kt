@@ -6,7 +6,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import moe.ouom.neriplayer.platform.search.api.NativeLyricSearchApi
-import moe.ouom.neriplayer.platform.search.api.client.QQMusicSearchApi
+import moe.ouom.neriplayer.platform.qqmusic.api.search.QQMusicSearchApi
 import moe.ouom.neriplayer.data.model.qqmusic.search.QQMusicSongMetadata
 import moe.ouom.neriplayer.common.logging.NPLogger
 import moe.ouom.neriplayer.data.model.music.SongDetails

@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import moe.ouom.neriplayer.platform.lyrics.api.client.AmllTtmlClient
-import moe.ouom.neriplayer.platform.search.api.client.QQMusicSearchApi
+import moe.ouom.neriplayer.platform.qqmusic.api.search.QQMusicSearchApi
 import moe.ouom.neriplayer.data.model.music.MusicPlatform
 import okhttp3.OkHttpClient
 import okhttp3.Protocol

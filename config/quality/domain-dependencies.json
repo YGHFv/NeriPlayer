@@ -3202,7 +3202,7 @@
       "moe.ouom.neriplayer.platform.lyrics.api.client.LrcLibClient",
       "moe.ouom.neriplayer.platform.search.api.NativeLyricSearchApi",
       "moe.ouom.neriplayer.platform.search.api.SearchApi",
-      "moe.ouom.neriplayer.platform.search.api.client.QQMusicSearchApi",
+      "moe.ouom.neriplayer.platform.qqmusic.api.search.QQMusicSearchApi",
       "moe.ouom.neriplayer.platform.youtube.api.client.YouTubeMusicClient",
       "moe.ouom.neriplayer.common.logging.NPLogger",
       "moe.ouom.neriplayer.lyrics.parser.LyricCreditFilterKt",

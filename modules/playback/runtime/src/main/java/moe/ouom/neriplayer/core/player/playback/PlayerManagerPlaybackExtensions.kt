@@ -1464,7 +1464,7 @@ private fun PlayerManager.pausePlayerOutput(flushPlayerOutput: Boolean) {
     }
 }
 
-private fun PlayerManager.pauseLyriconIfEnabled() {
+internal fun PlayerManager.pauseLyriconIfEnabled() {
     if (lyriconEnabled) LyriconManager.setPlaybackState(false)
 }
 
@@ -1884,117 +1884,4 @@ private fun PlayerManager.maybePersistLongFormPlaybackProgress(positionMs: Long)
 
 private fun PlayerManager.maybePersistPlaybackStatsProgress() {
     playbackStatsOwner.flushPeriodic(writesEnabled = initialized)
-}
-
-internal fun PlayerManager.stopPlaybackPreservingQueueImpl(clearMediaUrl: Boolean = false) {
-    serverRecoveryPosition = null
-    logQueueStopStart(clearMediaUrl)
-    cancelPendingPauseRequest(resetVolumeToFull = true)
-    clearPlaybackDemandCacheKey(reason = "stop_playback_preserving_queue")
-    playbackRequestToken += 1
-    cancelActivePlayForQueueStop()
-    pendingMediaLoadActive = false
-    cancelPlaybackStartupWatchdog(reason = "stop_playback_preserving_queue")
-    clearActivePlaybackCandidates()
-    cancelPrefetchForQueueStop()
-    lastHandledTrackEndKey = null
-    updateResumePlaybackRequested(false)
-    PlaybackTransitionWakeLock.release(
-        playbackRequestToken,
-        "stop_playback_preserving_queue"
-    )
-    playbackTransportOwner.resetForRelease()
-    stopProgressUpdates()
-    cancelVolumeFade(resetToFull = true)
-    clearAudioRouteMuteSuppression(reason = "stop_playback_preserving_queue")
-    persistCurrentLongFormPlaybackProgress()
-    syncPlaybackStatsPlayingState(
-        playing = false,
-        reason = "stop_playback_preserving_queue"
-    )
-    stopPlayerForQueuePreservation()
-    restoreQueueAfterStop(clearMediaUrl)
-    consecutivePlayFailures = 0
-    logQueueStopComplete()
-    scheduleStatePersist()
-}
-
-private fun PlayerManager.logQueueStopStart(clearMediaUrl: Boolean) {
-    NPLogger.d(
-        "NERI-PlayerManager",
-        "stopPlaybackPreservingQueue(): clearMediaUrl=$clearMediaUrl, queueSize=${currentPlaylist.size}, currentIndex=$currentIndex, currentSong=${currentSongNameForProgressLog()}, mediaUrlPresent=${hasQueueStopMediaUrl()}, stack=[${debugStackHint()}]"
-    )
-}
-
-private fun PlayerManager.cancelActivePlayForQueueStop() {
-    playJob?.cancel()
-    playJob = null
-}
-
-private fun PlayerManager.cancelPrefetchForQueueStop() {
-    currentYouTubePrefetchJob?.cancel()
-    currentYouTubePrefetchJob = null
-    currentYouTubePrefetchVideoIds = emptySet()
-}
-
-private fun PlayerManager.stopPlayerForQueuePreservation() {
-    runCatching { player.playWhenReady = false }
-    runCatching { player.stop() }
-    runCatching { player.clearMediaItems() }
-    _isPlayingFlow.value = false
-    pauseLyriconIfEnabled()
-    _playWhenReadyFlow.value = false
-    _playerPlaybackStateFlow.value = Player.STATE_IDLE
-    clearPendingSeekPosition()
-    _playbackPositionMs.value = 0L
-}
-
-private fun PlayerManager.restoreQueueAfterStop(clearMediaUrl: Boolean) {
-    if (currentPlaylist.isEmpty()) clearEmptyQueueAfterStop()
-    else restoreNonemptyQueueAfterStop(clearMediaUrl)
-}
-
-private fun PlayerManager.clearEmptyQueueAfterStop() {
-    clearRestoredPlayback()
-    currentIndex = -1
-    setCurrentSongForPlayback(null)
-    clearQueueStopMediaUrl()
-}
-
-private fun PlayerManager.restoreNonemptyQueueAfterStop(clearMediaUrl: Boolean) {
-    currentIndex = currentIndex.coerceIn(0, currentPlaylist.lastIndex)
-    setCurrentSongForPlayback(currentPlaylist.getOrNull(currentIndex))
-    if (clearMediaUrl) clearQueueStopMediaUrl()
-}
-
-private fun PlayerManager.clearQueueStopMediaUrl() {
-    _currentMediaUrl.value = null
-    _currentPlaybackAudioInfo.value = null
-    currentMediaUrlResolvedAtMs = 0L
-}
-
-private fun PlayerManager.logQueueStopComplete() {
-    NPLogger.d(
-        "NERI-PlayerManager",
-        "stopPlaybackPreservingQueue(): completed, queueSize=${currentPlaylist.size}, currentIndex=$currentIndex, retainedSong=${currentSongNameForProgressLog()}, mediaUrlPresent=${hasQueueStopMediaUrl()}"
-    )
-}
-
-private fun PlayerManager.currentSongNameForProgressLog(): String? = _currentSongFlow.value?.name
-
-private fun PlayerManager.hasQueueStopMediaUrl(): Boolean = hasNonBlankMediaUrl(_currentMediaUrl.value)
-
-internal fun hasNonBlankMediaUrl(url: String?): Boolean = !url.isNullOrBlank()
-
-internal fun PlayerManager.stopPlaybackImmediatelyImpl(
-    reason: String,
-    forcePersist: Boolean = true
-) {
-    pauseImpl(
-        forcePersist = forcePersist,
-        commandSource = PlaybackCommandSource.LOCAL_SAFETY,
-        allowFadeOut = false,
-        debugReason = reason,
-        flushPlayerOutput = true,
-    )
 }

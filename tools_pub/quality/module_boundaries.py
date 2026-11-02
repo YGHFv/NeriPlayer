@@ -147,6 +147,7 @@ PACKAGE_OWNERS = {
                       "auth", "network", "playlist", "stats", "storage", "listentogether",
                       "local.media", "local.audioimport", "local.playlist", "local.storage")},
     "moe.ouom.neriplayer.platform.netease.auth": ":platform",
+    "moe.ouom.neriplayer.platform.qqmusic": ":platform",
     "moe.ouom.neriplayer.platform.bilibili.auth": ":platform",
     "moe.ouom.neriplayer.platform.youtube": ":platform",
     "moe.ouom.neriplayer.platform.netease": ":platform",
@@ -207,7 +208,8 @@ PACKAGE_DEPENDENCY_RULES = (
          PROJECT_PACKAGE + "platform.bilibili.playback.resolver." + function
          for function in ("biliBvidOrNull", "biliCidOrNull", "buildBiliSongAlbum", "resolveBiliSong")
      }),
-    (("platform.lyrics",), {":common", MODEL_MODULE}, ("platform.lyrics.api", "platform.search.api", "platform.youtube.api"),
+    (("platform.lyrics",), {":common", MODEL_MODULE},
+     ("platform.lyrics.api", "platform.search.api", "platform.qqmusic.api.search", "platform.youtube.api"),
      PROVIDER_PARSER_REFERENCES),
 )
 

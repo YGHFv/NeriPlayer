@@ -432,8 +432,8 @@
       ]
     },
     {
-      "source": "moe/ouom/neriplayer/platform/search/api/client/QQMusicSearchApi.kt",
-      "class": "moe.ouom.neriplayer.platform.search.api.client.QQMusicSearchApi",
+      "source": "moe/ouom/neriplayer/platform/qqmusic/api/search/QQMusicSearchApi.kt",
+      "class": "moe.ouom.neriplayer.platform.qqmusic.api.search.QQMusicSearchApi",
       "methods": [
         "<init>",
         "logDetailResponse"

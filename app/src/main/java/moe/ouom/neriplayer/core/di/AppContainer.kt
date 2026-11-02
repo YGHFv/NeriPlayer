@@ -60,7 +60,7 @@ import moe.ouom.neriplayer.platform.netease.api.client.NeteaseClient
 import moe.ouom.neriplayer.BuildConfig
 import moe.ouom.neriplayer.platform.search.api.client.CloudMusicSearchApi
 import moe.ouom.neriplayer.data.model.music.MusicPlatform
-import moe.ouom.neriplayer.platform.search.api.client.QQMusicSearchApi
+import moe.ouom.neriplayer.platform.qqmusic.api.search.QQMusicSearchApi
 import moe.ouom.neriplayer.platform.lyrics.search.SearchManager
 import moe.ouom.neriplayer.platform.youtube.api.client.YouTubeMusicClient
 import moe.ouom.neriplayer.platform.youtube.api.client.YouTubeAccountProfileClient
