@@ -57,6 +57,26 @@ class PlayerLyricsProviderTest {
     }
 
     @Test
+    fun `QQ Music lyric routing prefers the matched QQ MID and falls back to source audio ID`() {
+        val matched = qqMusicSong(
+            audioId = "source-mid",
+            matchedSongId = "matched-mid",
+            matchedLyricSource = moe.ouom.neriplayer.data.model.music.MusicPlatform.QQ_MUSIC
+        )
+        val sourceOnly = qqMusicSong(audioId = "source-mid")
+        val matchedWithoutId = qqMusicSong(
+            audioId = "source-mid",
+            matchedSongId = " ",
+            matchedLyricSource = moe.ouom.neriplayer.data.model.music.MusicPlatform.QQ_MUSIC
+        )
+
+        assertTrue(PlayerLyricsProvider.isQQMusicLyricSource(matched))
+        assertEquals("matched-mid", PlayerLyricsProvider.qqMusicSongMid(matched))
+        assertEquals("source-mid", PlayerLyricsProvider.qqMusicSongMid(sourceOnly))
+        assertEquals("source-mid", PlayerLyricsProvider.qqMusicSongMid(matchedWithoutId))
+    }
+
+    @Test
     fun `resolveLocalFirstLyricText keeps local blank override ahead of stored and downloaded text`() {
         assertEquals(
             "[00:01.00]local",
@@ -1009,6 +1029,27 @@ class PlayerLyricsProviderTest {
             durationMs = 240_000L,
             coverUrl = null,
             mediaUri = "https://music.youtube.com/watch?v=video42"
+        )
+    }
+
+    private fun qqMusicSong(
+        audioId: String,
+        matchedSongId: String? = null,
+        matchedLyricSource: moe.ouom.neriplayer.data.model.music.MusicPlatform? = null
+    ): SongItem {
+        return SongItem(
+            id = 64L,
+            name = "QQ Song",
+            artist = "QQ Artist",
+            album = "QQ Album",
+            albumId = 0L,
+            durationMs = 180_000L,
+            coverUrl = null,
+            mediaUri = "https://y.qq.com/n/ryqq/songDetail/$audioId",
+            channelId = moe.ouom.neriplayer.data.model.ltw.track.ListenTogetherChannels.QQ_MUSIC,
+            audioId = audioId,
+            matchedSongId = matchedSongId,
+            matchedLyricSource = matchedLyricSource
         )
     }
 }

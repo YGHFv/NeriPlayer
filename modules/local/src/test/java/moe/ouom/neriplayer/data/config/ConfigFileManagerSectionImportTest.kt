@@ -32,6 +32,7 @@ import moe.ouom.neriplayer.data.sync.store.webdav.WebDavStorage
 import moe.ouom.neriplayer.data.sync.work.SyncWorkScheduler
 import moe.ouom.neriplayer.platform.bilibili.auth.BiliCookieRepository
 import moe.ouom.neriplayer.platform.netease.auth.NeteaseCookieRepository
+import moe.ouom.neriplayer.platform.qqmusic.auth.QQMusicAuthRepository
 import moe.ouom.neriplayer.platform.youtube.auth.YouTubeAuthRepository
 import moe.ouom.neriplayer.platform.youtube.api.auth.hasSavedAuthMaterial
 import org.junit.After
@@ -69,6 +70,7 @@ class ConfigFileManagerSectionImportTest {
     private val netease = mock(NeteaseCookieRepository::class.java)
     private val bili = mock(BiliCookieRepository::class.java)
     private val youtube = mock(YouTubeAuthRepository::class.java)
+    private val qqMusic = mock(QQMusicAuthRepository::class.java)
     private val originalLocale = Locale.getDefault()
     private val savedAuth = mutableListOf<YouTubeAuthBundle>()
     private val scheduled = mutableListOf<String>()
@@ -91,6 +93,7 @@ class ConfigFileManagerSectionImportTest {
         doReturn(true).`when`(netease).isAuthStoragePersistent
         doReturn(true).`when`(bili).isAuthStoragePersistent
         doReturn(true).`when`(youtube).isAuthStoragePersistent
+        doReturn(true).`when`(qqMusic).isAuthStoragePersistent
         doAnswer { ByteArrayInputStream(input.toByteArray()) }.`when`(resolver).openInputStream(uri)
         doAnswer {
             val bundle = it.getArgument<YouTubeAuthBundle>(0)
@@ -328,6 +331,28 @@ class ConfigFileManagerSectionImportTest {
         assertEquals(AppConfigImportResult(0, 0, 2, 0, emptyList(), requiresActivityRecreate = false), result)
         assertEquals(2, savedAt.size)
         assertTrue(savedAt.toString(), savedAt.all { it in before..System.currentTimeMillis() })
+    }
+
+    @Test
+    fun `qq music auth restores cookies and supports signed out snapshots`() = runTest {
+        val result = importSections(
+            """"qqMusicAuth":{"cookies":{"uin":"10001","qm_keyst":"session"},"savedAt":99}"""
+        )
+        val cleared = importSections(""""qqMusicAuth":{}""")
+
+        assertEquals(
+            AppConfigImportResult(0, 0, 1, 0, emptyList(), requiresActivityRecreate = false),
+            result
+        )
+        verify(qqMusic).saveCookies(
+            mapOf("uin" to "10001", "qm_keyst" to "session"),
+            99L
+        )
+        assertEquals(
+            AppConfigImportResult(0, 0, 0, 0, emptyList(), requiresActivityRecreate = false),
+            cleared
+        )
+        verify(qqMusic).clear()
     }
 
     @Test
@@ -606,7 +631,8 @@ class ConfigFileManagerSectionImportTest {
         youtube,
         SyncProtocolUpgradeRepository(MemoryPreferencesStore()),
         UnconfinedTestDispatcher(testScheduler),
-        withYouTubeAuthChange = withAuthChange
+        withYouTubeAuthChange = withAuthChange,
+        qqMusicAuthRepo = qqMusic
     )
 
     private class MemoryPreferencesStore : DataStore<Preferences> {

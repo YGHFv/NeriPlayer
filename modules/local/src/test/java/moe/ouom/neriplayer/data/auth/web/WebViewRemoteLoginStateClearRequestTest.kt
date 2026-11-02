@@ -87,11 +87,17 @@ class WebViewRemoteLoginStateClearRequestTest {
 
             log.verify { Log.w(anyString(), eq("Remote WebView state clear failed: $BILI"), isNull()) }
             log.verify({ Log.w(anyString(), eq("Remote WebView state clear failed: $NETEASE"), isNull()) }, never())
-            log.verify { Log.w(anyString(), eq("Timed out clearing remote WebView state: $YOUTUBE"), isNull()) }
+            log.verify {
+                Log.w(
+                    anyString(),
+                    eq("Timed out clearing remote WebView state: $YOUTUBE, $QQ_MUSIC"),
+                    isNull()
+                )
+            }
         }
 
-        assertEquals(listOf(NETEASE, BILI, YOUTUBE), requestedReceivers)
-        assertEquals(3, requestIds.size)
+        assertEquals(listOf(NETEASE, BILI, YOUTUBE, QQ_MUSIC), requestedReceivers)
+        assertEquals(4, requestIds.size)
         assertEquals(1, requestIds.distinct().size)
         verify(context).unregisterReceiver(replyReceiver)
         verify(webStorage).deleteAllData()
@@ -102,14 +108,15 @@ class WebViewRemoteLoginStateClearRequestTest {
         repliesPerRequest += listOf(
             reply(receiver = NETEASE, succeeded = true),
             reply(receiver = BILI, succeeded = true),
-            reply(receiver = YOUTUBE, succeeded = true)
+            reply(receiver = YOUTUBE, succeeded = true),
+            reply(receiver = QQ_MUSIC, succeeded = true)
         )
 
         withBroadcasts(webViewAvailable = false) {
             clearAllWebViewLoginState(context)
         }
 
-        assertEquals(listOf(NETEASE, BILI, YOUTUBE), requestedReceivers)
+        assertEquals(listOf(NETEASE, BILI, YOUTUBE, QQ_MUSIC), requestedReceivers)
         verify(webStorage, never()).deleteAllData()
     }
 
@@ -161,5 +168,6 @@ class WebViewRemoteLoginStateClearRequestTest {
         val NETEASE: String = NeteaseWebViewLoginStateClearReceiver::class.java.name
         val BILI: String = BiliWebViewLoginStateClearReceiver::class.java.name
         val YOUTUBE: String = YouTubeWebViewLoginStateClearReceiver::class.java.name
+        val QQ_MUSIC: String = QQMusicWebViewLoginStateClearReceiver::class.java.name
     }
 }

@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.LibraryMusic
+import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -47,6 +48,7 @@ enum class PlaybackSourceType {
     NETEASE,
     BILIBILI,
     YOUTUBE_MUSIC,
+    QQ_MUSIC,
     LOCAL,
     SUBSONIC
 }
@@ -104,6 +106,20 @@ fun PlaybackSourceBadge(
                 )
                 Text(
                     text = stringResource(CoreCommonR.string.nowplaying_youtube_music),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            PlaybackSourceType.QQ_MUSIC -> {
+                Icon(
+                    imageVector = Icons.Outlined.MusicNote,
+                    contentDescription = stringResource(CoreCommonR.string.settings_qq_music),
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = stringResource(CoreCommonR.string.settings_qq_music),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )

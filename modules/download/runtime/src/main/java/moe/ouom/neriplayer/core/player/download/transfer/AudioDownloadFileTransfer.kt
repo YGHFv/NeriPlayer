@@ -12,9 +12,11 @@ import moe.ouom.neriplayer.core.player.download.sidecar.ensureDownloadNotCancell
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import moe.ouom.neriplayer.core.download.ManagedDownloadStorage
+import moe.ouom.neriplayer.core.download.resource.DownloadStorageSpaceException
 import moe.ouom.neriplayer.core.download.resource.DownloadStorageSpaceGuard
 import moe.ouom.neriplayer.network.range.ChunkRequestIOException
 import moe.ouom.neriplayer.network.range.ResumableHttpRangeSupport
@@ -28,6 +30,17 @@ import okio.BufferedSink
 import okio.BufferedSource
 import okio.buffer
 import okio.sink
+
+internal fun shouldTryNextDownloadMirror(
+    error: Throwable,
+    currentIndex: Int,
+    requestCount: Int
+): Boolean {
+    if (currentIndex >= requestCount - 1) return false
+    if (error is CancellationException) return false
+    if (error is DownloadStorageSpaceException) return false
+    return error is IOException
+}
 
 /**
  * 直链和 Range 分块传输引擎
@@ -103,7 +116,73 @@ internal class AudioDownloadFileTransfer(
         batchSessionId: Long? = null,
         attemptId: Long? = null,
         operationId: String? = null,
-        transferGeneration: Long? = null
+        transferGeneration: Long? = null,
+        fallbackRequests: List<Request> = emptyList()
+    ): AudioDownloadManager.DownloadedPayloadSummary = withContext(Dispatchers.IO) {
+        val requests = (listOf(request) + fallbackRequests)
+            .distinctBy { it.url.toString() }
+        var lastError: Exception? = null
+        requests.forEachIndexed { index, candidateRequest ->
+            if (index > 0) {
+                AudioDownloadLog.d(
+                    "切换下载镜像: ${candidateRequest.url.host}, index=$index, songId=$songId"
+                )
+                hooks.withWorkingFileMutation(
+                    songKey,
+                    "direct_mirror_fallback_reset",
+                    batchSessionId,
+                    attemptId,
+                    operationId
+                ) {
+                    hooks.deleteWorkingFile(destFile)
+                }
+            }
+            try {
+                return@withContext downloadSingle(
+                    client = client,
+                    request = candidateRequest,
+                    destFile = destFile,
+                    displayFileName = displayFileName,
+                    songId = songId,
+                    songKey = songKey,
+                    batchSessionId = batchSessionId,
+                    attemptId = attemptId,
+                    operationId = operationId,
+                    transferGeneration = transferGeneration
+                )
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                lastError = error
+                if (
+                    !shouldTryNextDownloadMirror(
+                        error = error,
+                        currentIndex = index,
+                        requestCount = requests.size
+                    )
+                ) {
+                    throw error
+                }
+                AudioDownloadLog.d(
+                    "下载镜像失败，尝试下一候选: host=${candidateRequest.url.host}, " +
+                        "songId=$songId, ${error.javaClass.simpleName} - ${error.message}"
+                )
+            }
+        }
+        throw lastError ?: IOException("No download mirror is available")
+    }
+
+    private suspend fun downloadSingle(
+        client: OkHttpClient,
+        request: Request,
+        destFile: File,
+        displayFileName: String,
+        songId: Long,
+        songKey: String,
+        batchSessionId: Long?,
+        attemptId: Long?,
+        operationId: String?,
+        transferGeneration: Long?
     ): AudioDownloadManager.DownloadedPayloadSummary = withContext(Dispatchers.IO) {
         hooks.ensureDownloadNotCancelled(
             songId,
@@ -241,7 +320,7 @@ internal class AudioDownloadFileTransfer(
             throw DownloadRangeRestartRequiredException()
         }
         if (!response.isSuccessful) {
-            throw IllegalStateException("HTTP ${response.code}")
+            throw IOException("HTTP ${response.code}")
         }
 
         val appending = resumedBytes > 0L && response.code == 206

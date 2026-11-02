@@ -27,6 +27,7 @@ private object AppPlayerRepositories : PlayerRepositoryDependencies {
     override val biliCookieRepo get() = AppContainer.biliCookieRepo
     override val neteaseCookieRepo get() = AppContainer.neteaseCookieRepo
     override val youtubeAuthRepo get() = AppContainer.youtubeAuthRepo
+    override val qqMusicAuthRepo get() = AppContainer.qqMusicAuthRepo
     override val biliClient get() = AppContainer.biliClient
     override val neteaseClient get() = AppContainer.neteaseClient
     override val youtubeMusicClient get() = AppContainer.youtubeMusicClient
@@ -36,6 +37,7 @@ private object AppPlayerRepositories : PlayerRepositoryDependencies {
     override val biliVideoSkipRepository get() = AppContainer.biliVideoSkipRepository
     override val cloudMusicSearchApi get() = AppContainer.cloudMusicSearchApi
     override val qqMusicSearchApi get() = AppContainer.qqMusicSearchApi
+    override val qqMusicClient get() = AppContainer.qqMusicClient
     override val lrcLibClient get() = AppContainer.lrcLibClient
     override val amllTtmlClient get() = AppContainer.amllTtmlClient
     override val editableLyricsMatcher get() = AppContainer.editableLyricsMatcher

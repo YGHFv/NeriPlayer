@@ -418,7 +418,17 @@ class StartupOnboardingProgressTest {
             shouldWarnStartupNoPlatformConnected(
                 biliState = SavedCookieAuthState.Checking,
                 neteaseState = SavedCookieAuthState.Missing,
-                youTubeState = YouTubeAuthState.Missing
+                youTubeState = YouTubeAuthState.Missing,
+                qqMusicState = SavedCookieAuthState.Missing
+            )
+        )
+        assertEquals(
+            false,
+            shouldWarnStartupNoPlatformConnected(
+                biliState = SavedCookieAuthState.Missing,
+                neteaseState = SavedCookieAuthState.Missing,
+                youTubeState = YouTubeAuthState.Missing,
+                qqMusicState = SavedCookieAuthState.Valid
             )
         )
     }

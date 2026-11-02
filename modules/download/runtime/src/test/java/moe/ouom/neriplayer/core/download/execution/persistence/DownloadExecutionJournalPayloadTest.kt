@@ -108,6 +108,7 @@ class DownloadExecutionJournalPayloadTest {
         assertEquals("Lossless", quality.getString("neteaseQuality"))
         assertEquals("High", quality.getString("youtubeQuality"))
         assertEquals("192K", quality.getString("biliQuality"))
+        assertEquals("Lossless", quality.getString("qqMusicQuality"))
     }
 
     @Test
@@ -160,7 +161,7 @@ class DownloadExecutionJournalPayloadTest {
         assertEquals(request.requiresWifiNetwork, decoded.requiresWifiNetwork)
         assertEquals(request.userInitiated, decoded.userInitiated)
         assertEquals(
-            DownloadAudioQualitySelection.normalized("Lossless", "High", "192K"),
+            DownloadAudioQualitySelection.normalized("Lossless", "High", "192K", "Lossless"),
             decoded.downloadAudioQuality
         )
         assertEquals(
@@ -396,7 +397,8 @@ class DownloadExecutionJournalPayloadTest {
             downloadAudioQuality = DownloadAudioQualitySelection(
                 neteaseQuality = "Lossless",
                 youtubeQuality = "High",
-                biliQuality = "192K"
+                biliQuality = "192K",
+                qqMusicQuality = "Lossless"
             ),
             batchId = "batch-1",
             batchGeneration = 2L,

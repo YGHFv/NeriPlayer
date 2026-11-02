@@ -105,7 +105,8 @@ private fun buildYouTubeEjsWebViewSessionResultScript(): String {
 
 internal class YouTubeEjsWebViewFallbackSolver(
     context: Context,
-    private val webViewFactory: (Context) -> WebView = { WebView(it) }
+    private val webViewFactory: (Context) -> WebView = { WebView(it) },
+    assetLoaderFactory: (Context, File) -> WebViewAssetLoader = ::createYouTubeEjsWebViewAssetLoader
 ) {
     private data class Session(
         val playerJsUrl: String,
@@ -116,13 +117,11 @@ internal class YouTubeEjsWebViewFallbackSolver(
     private val appContext = context.applicationContext
     private val sessionLock = Mutex()
     private val pageDirectory = File(appContext.cacheDir, YOUTUBE_EJS_WEBVIEW_CACHE_DIRECTORY)
-    private val assetLoader = WebViewAssetLoader.Builder()
-        .addPathHandler(
-            "/youtube-ejs/",
-            WebViewAssetLoader.InternalStoragePathHandler(appContext, pageDirectory)
-        )
-        .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(appContext))
-        .build()
+        .apply {
+            appContext.cacheDir.mkdirs()
+            mkdirs()
+        }
+    private val assetLoader = assetLoaderFactory(appContext, pageDirectory)
     private var session: Session? = null
 
     suspend fun warm(playerJsUrl: String, playerScript: String) {
@@ -357,4 +356,17 @@ internal class YouTubeEjsWebViewFallbackSolver(
         }
         return runCatching { JSONTokener(raw).nextValue() as? String }.getOrNull()
     }
+}
+
+private fun createYouTubeEjsWebViewAssetLoader(
+    context: Context,
+    pageDirectory: File
+): WebViewAssetLoader {
+    return WebViewAssetLoader.Builder()
+        .addPathHandler(
+            "/youtube-ejs/",
+            WebViewAssetLoader.InternalStoragePathHandler(context, pageDirectory)
+        )
+        .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context))
+        .build()
 }

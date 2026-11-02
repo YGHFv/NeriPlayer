@@ -18,6 +18,10 @@ class WebViewLoginStateCleanerTest {
             listOf(YouTubeWebViewLoginStateClearReceiver::class.java.name),
             remoteWebViewLoginStateClearReceiverNames(setOf(WebLoginPlatform.YOUTUBE))
         )
+        assertEquals(
+            listOf(QQMusicWebViewLoginStateClearReceiver::class.java.name),
+            remoteWebViewLoginStateClearReceiverNames(setOf(WebLoginPlatform.QQ_MUSIC))
+        )
     }
 
     @Test
@@ -26,7 +30,8 @@ class WebViewLoginStateCleanerTest {
             listOf(
                 NeteaseWebViewLoginStateClearReceiver::class.java.name,
                 BiliWebViewLoginStateClearReceiver::class.java.name,
-                YouTubeWebViewLoginStateClearReceiver::class.java.name
+                YouTubeWebViewLoginStateClearReceiver::class.java.name,
+                QQMusicWebViewLoginStateClearReceiver::class.java.name
             ),
             remoteWebViewLoginStateClearReceiverNames(WebLoginPlatform.entries.toSet())
         )

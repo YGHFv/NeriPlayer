@@ -88,11 +88,17 @@ class PlaybackPreferenceSnapshotTest {
     fun `preferences preserve explicit playback source fallback choices`() {
         val snapshot = preferencesOf(
             SettingsKeys.NETEASE_AUTO_SOURCE_SWITCH to true,
-            SettingsKeys.NETEASE_LOCAL_SOURCE_FALLBACK to true
+            SettingsKeys.NETEASE_LOCAL_SOURCE_FALLBACK to true,
+            SettingsKeys.QQ_MUSIC_AUTO_SOURCE_SWITCH to true,
+            SettingsKeys.QQ_MUSIC_AUDIO_QUALITY to "lossless",
+            SettingsKeys.MOBILE_DATA_QQ_MUSIC_AUDIO_QUALITY to "exhigh"
         ).toPlaybackPreferenceSnapshot()
 
         assertTrue(snapshot.neteaseAutoSourceSwitch)
         assertTrue(snapshot.neteaseLocalSourceFallback)
+        assertTrue(snapshot.qqMusicAutoSourceSwitch)
+        assertEquals("lossless", snapshot.qqMusicAudioQuality)
+        assertEquals("exhigh", snapshot.mobileDataQqMusicAudioQuality)
     }
 
     @Test
@@ -185,6 +191,7 @@ class PlaybackPreferenceSnapshotTest {
         assertTrue(snapshot.keepPlaybackModeState)
         assertFalse(snapshot.neteaseAutoSourceSwitch)
         assertFalse(snapshot.neteaseLocalSourceFallback)
+        assertFalse(snapshot.qqMusicAutoSourceSwitch)
         assertFalse(snapshot.allowMixedPlayback)
         assertTrue(snapshot.playbackFadeIn)
         assertTrue(snapshot.playbackCrossfadeNext)

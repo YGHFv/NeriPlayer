@@ -211,6 +211,10 @@ internal class AppAudioQualitySettingsActions(
 
     val onBiliQualityChange: (String) -> Unit = { scope.launch { repo.setBiliAudioQuality(it) } }
 
+    val onQqMusicQualityChange: (String) -> Unit = {
+        scope.launch { repo.setQqMusicAudioQuality(it) }
+    }
+
     val onMobileDataFollowDefaultAudioQualityChange: (Boolean) -> Unit = { enabled ->
             scope.launch {
                 repo.setMobileDataFollowDefaultAudioQuality(enabled)
@@ -232,6 +236,12 @@ internal class AppAudioQualitySettingsActions(
     val onMobileDataBiliAudioQualityChange: (String) -> Unit = { quality ->
             scope.launch {
                 repo.setMobileDataBiliAudioQuality(quality)
+            }
+        }
+
+    val onMobileDataQqMusicAudioQualityChange: (String) -> Unit = { quality ->
+            scope.launch {
+                repo.setMobileDataQqMusicAudioQuality(quality)
             }
         }
 }
@@ -308,6 +318,10 @@ internal class AppPlaybackSettingsActions(
 
     val onNeteaseLocalSourceFallbackChange: (Boolean) -> Unit = { enabled ->
             scope.launch { repo.setNeteaseLocalSourceFallback(enabled) }
+        }
+
+    val onQqMusicAutoSourceSwitchChange: (Boolean) -> Unit = { enabled ->
+            scope.launch { repo.setQqMusicAutoSourceSwitch(enabled) }
         }
 
     val onStopOnBluetoothDisconnectChange: (Boolean) -> Unit = { enabled ->

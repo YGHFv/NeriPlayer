@@ -6,6 +6,7 @@
     <string name="login_qr">QR Login</string>
     <string name="login_start_browser">Login via Browser</string>
     <string name="login_start_netease_qr">Sign in with NetEase QR</string>
+    <string name="login_start_qq_music_qr">Sign in with QQ Music QR</string>
     <string name="login_start_bili_qr">Sign in with Bilibili QR</string>
     <string name="login_netease">NetEase Login</string>
     <string name="login_sms_code">SMS Code</string>
@@ -21,6 +22,7 @@
     <string name="settings_bili_login_success">Bilibili login successful</string>
     <string name="settings_netease_login_success">NetEase login successful</string>
     <string name="settings_youtube_login_success">YouTube login successful</string>
+    <string name="settings_qq_music_login_success">QQ Music login successful</string>
     <string name="settings_bili_status_valid">Saved and last refreshed %1$s</string>
     <string name="settings_bili_status_saved_invalid">A saved Cookie was found, but it may be invalid. Tap to refresh it or sign out</string>
     <string name="settings_bili_status_missing">No usable Cookie detected. Tap to sign in again or import one</string>
@@ -39,6 +41,8 @@
     <string name="auth_cookie_empty">Cookie is empty</string>
     <string name="settings_netease_auto_source_switch">NetEase Auto Source Switch</string>
     <string name="settings_netease_auto_source_switch_desc">Off by default. When enabled, search Bilibili automatically when a NetEase song is unavailable or only returns a preview clip.</string>
+    <string name="settings_qq_music_auto_source_switch">QQ Music Auto Source Switch</string>
+    <string name="settings_qq_music_auto_source_switch_desc">Off by default. When enabled, search Bilibili automatically when a QQ Music song is unavailable, fails to resolve, or only returns a preview clip.</string>
     <string name="settings_netease_local_source_fallback">Local Audio Fallback</string>
     <string name="settings_netease_local_source_fallback_desc">Off by default. When enabled, prefer a local audio file matched to the same song when a NetEase song is unavailable or only returns a preview clip.</string>
     <string name="settings_youtube_playback_source">YouTube Playback Source</string>
@@ -98,8 +102,11 @@
     <string name="youtube_web_login">YouTube Login</string>
     <string name="settings_netease_login_browser_hint">Opens NetEase QR login. After you scan and confirm, cookies are saved automatically. If it fails, use the web login fallback on the QR page.</string>
     <string name="settings_bili_login_browser_hint">Opens Bilibili QR login and saves cookies after confirmation. If it fails, use the web login fallback on the QR page.</string>
+    <string name="settings_qq_music_login_browser_hint">Opens native QQ Music QR login for QQ or WeChat. Credentials are saved after confirmation; web login remains available as a fallback.</string>
     <string name="settings_bili_saved_cookie_title">Saved Bilibili Cookie detected</string>
     <string name="settings_bili_saved_cookie_message">A local Bilibili Cookie is already saved. You can sign out to clear it, or continue signing in to refresh the Cookie.</string>
+    <string name="settings_qq_music_saved_cookie_title">Saved QQ Music Cookie detected</string>
+    <string name="settings_qq_music_saved_cookie_message">A local QQ Music Cookie is already saved. You can sign out to clear it, or continue signing in to refresh the Cookie.</string>
     <string name="settings_netease_saved_cookie_title">Saved NetEase Cookie detected</string>
     <string name="settings_netease_saved_cookie_message">A local NetEase Cookie is already saved. You can sign out to clear it, or continue signing in to refresh the Cookie.</string>
     <string name="settings_youtube_login_browser_hint">Tries to open music.youtube.com in the built-in web view and automatically reads cookies after sign-in.</string>
@@ -107,6 +114,7 @@
     <string name="settings_youtube_saved_cookie_message">Local YouTube auth information is already saved. You can sign out to clear it, or continue signing in to refresh auth.</string>
     <string name="settings_youtube_login_browser_warning">Google may show \"This browser may not be secure\" or block sign-in entirely. If that happens, switch to the \"Cookie Import\" tab above.</string>
     <string name="login_paste_bili_cookie_hint">Paste Cookie (e.g.: SESSDATA=…; bili_jct=…)</string>
+    <string name="login_paste_qq_music_cookie_hint">Paste Cookie (e.g.: uin=…; qm_keyst=…)</string>
     <string name="login_paste_youtube_cookie_hint">Paste Cookie or browser request headers (must include Cookie)</string>
     <string name="settings_cookie_input_hint">Please enter Cookie</string>
     <string name="settings_account_authorization_saved">Authorization saved</string>

@@ -29,7 +29,9 @@ import moe.ouom.neriplayer.ui.viewmodel.tab.AlbumSummary
 import moe.ouom.neriplayer.ui.viewmodel.tab.BiliPlaylistKind
 import moe.ouom.neriplayer.ui.viewmodel.tab.BiliPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.PlaylistSummary
+import moe.ouom.neriplayer.ui.viewmodel.tab.QQMusicPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.YouTubeMusicPlaylist
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicPlaylistKind
 
 private const val KEY_ID = "id"
 private const val KEY_NAME = "name"
@@ -48,6 +50,7 @@ private const val KEY_PLAYLIST_ID = "playlistId"
 private const val KEY_BROWSE_ID = "browseId"
 private const val KEY_SUBTITLE = "subtitle"
 private const val KEY_CREATOR_NAME = "creatorName"
+private const val KEY_DIR_ID = "dirId"
 
 val playlistSummarySaver: Saver<PlaylistSummary?, Any> = mapSaver(
     save = { playlist ->
@@ -72,6 +75,15 @@ val biliPlaylistSaver: Saver<BiliPlaylist?, Any> = mapSaver(
         } else {
             restoreBiliPlaylist(saved)
         }
+    }
+)
+
+val qqMusicPlaylistSaver: Saver<QQMusicPlaylist?, Any> = mapSaver(
+    save = { playlist ->
+        playlist?.toSaveMap() ?: emptyMap()
+    },
+    restore = { saved ->
+        if (saved.isEmpty()) null else restoreQQMusicPlaylist(saved)
     }
 )
 
@@ -132,6 +144,21 @@ fun restoreYouTubeMusicPlaylist(map: Map<*, *>?): YouTubeMusicPlaylist? {
     )
 }
 
+fun restoreQQMusicPlaylist(map: Map<*, *>?): QQMusicPlaylist? {
+    if (map.isNullOrEmpty()) return null
+    val id = map.savedNumber(KEY_ID)?.toLong() ?: return null
+    val title = map.savedString(KEY_TITLE) ?: return null
+    return QQMusicPlaylist(
+        id = id,
+        dirId = map.long(KEY_DIR_ID),
+        title = title,
+        coverUrl = map.text(KEY_COVER_URL),
+        trackCount = map.int(KEY_TRACK_COUNT),
+        playCount = map.long(KEY_PLAY_COUNT),
+        kind = qqMusicPlaylistKindOrDefault(map.savedString(KEY_KIND))
+    )
+}
+
 internal fun Map<*, *>.savedNumber(key: String): Number? = this[key] as? Number
 
 internal fun Map<*, *>.savedString(key: String): String? = this[key] as? String
@@ -142,6 +169,9 @@ internal fun Map<*, *>.savedMap(key: String): Map<*, *>? = this[key] as? Map<*, 
 
 internal fun biliPlaylistKindOrDefault(name: String?): BiliPlaylistKind =
     BiliPlaylistKind.entries.firstOrNull { it.name == name } ?: BiliPlaylistKind.CREATED_FAVORITE
+
+internal fun qqMusicPlaylistKindOrDefault(name: String?): QQMusicPlaylistKind =
+    QQMusicPlaylistKind.entries.firstOrNull { it.name == name } ?: QQMusicPlaylistKind.CREATED
 
 internal fun <T> restoreSavedByType(
     saved: Map<String, Any?>,
@@ -190,4 +220,14 @@ fun YouTubeMusicPlaylist.toSaveMap(): HashMap<String, Any?> = hashMapOf(
     KEY_COVER_URL to coverUrl,
     KEY_SUBTITLE to subtitle,
     KEY_CREATOR_NAME to creatorName
+)
+
+fun QQMusicPlaylist.toSaveMap(): HashMap<String, Any?> = hashMapOf(
+    KEY_ID to id,
+    KEY_DIR_ID to dirId,
+    KEY_TITLE to title,
+    KEY_COVER_URL to coverUrl,
+    KEY_TRACK_COUNT to trackCount,
+    KEY_PLAY_COUNT to playCount,
+    KEY_KIND to kind.name
 )

@@ -95,6 +95,7 @@ import moe.ouom.neriplayer.ui.viewmodel.tab.AlbumSummary
 import moe.ouom.neriplayer.ui.viewmodel.tab.BiliPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.LibraryViewModel
 import moe.ouom.neriplayer.ui.viewmodel.tab.PlaylistSummary
+import moe.ouom.neriplayer.ui.viewmodel.tab.QQMusicPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.YouTubeMusicPlaylist
 import moe.ouom.neriplayer.ui.haptic.HapticIconButton
 import moe.ouom.neriplayer.ui.util.currentWindowWidthDp
@@ -202,6 +203,7 @@ internal fun libraryTabDisplayOrder(
             LibraryTab.YTMUSIC,
             LibraryTab.NETEASE,
             LibraryTab.BILI,
+            LibraryTab.QQMUSIC,
             LibraryTab.MY_MUSIC
         )
     } else {
@@ -211,6 +213,7 @@ internal fun libraryTabDisplayOrder(
             LibraryTab.NETEASE,
             LibraryTab.YTMUSIC,
             LibraryTab.BILI,
+            LibraryTab.QQMUSIC,
             LibraryTab.MY_MUSIC
         )
     }
@@ -225,7 +228,8 @@ internal fun LibraryTab?.isRefreshable(): Boolean {
     return when (this?.asVisibleLibraryTab()) {
         LibraryTab.BILI,
         LibraryTab.YTMUSIC,
-        LibraryTab.NETEASE -> true
+        LibraryTab.NETEASE,
+        LibraryTab.QQMUSIC -> true
         else -> false
     }
 }
@@ -255,6 +259,7 @@ fun LibraryScreen(
     onYouTubeMusicCreatorClick: (YouTubeMusicCreatorSummary) -> Unit = {},
     onYouTubeMusicPlaylistClick: (YouTubeMusicPlaylist) -> Unit = {},
     onBiliPlaylistClick: (BiliPlaylist) -> Unit = {},
+    onQqMusicPlaylistClick: (QQMusicPlaylist) -> Unit = {},
     onOpenRecent: () -> Unit = {},
     onOpenStats: () -> Unit = {},
     offlineMode: Boolean = false
@@ -515,9 +520,23 @@ fun LibraryScreen(
                             offlineMode = offlineMode
                         ) }
 
-                        LibraryTab.QQMUSIC -> QqMusicPlaylistList(
-                            listState = qqMusicListState
-                        )
+                        LibraryTab.QQMUSIC -> LibraryPullToRefresh(
+                            refreshing = ui.qqMusicRefreshing,
+                            enabled = !offlineMode &&
+                                ui.qqMusicLoggedIn &&
+                                topAppBarState.collapsedFraction <= 0.01f,
+                            onRefresh = vm::refreshQqMusicPlaylists
+                        ) { QqMusicPlaylistList(
+                            playlists = ui.qqMusicPlaylists,
+                            error = ui.qqMusicError,
+                            warning = ui.qqMusicWarning,
+                            loggedIn = ui.qqMusicLoggedIn,
+                            refreshing = ui.qqMusicRefreshing,
+                            listState = qqMusicListState,
+                            onClick = onQqMusicPlaylistClick,
+                            onRetry = vm::refreshQqMusicPlaylists,
+                            offlineMode = offlineMode
+                        ) }
                     }
                 }
             }

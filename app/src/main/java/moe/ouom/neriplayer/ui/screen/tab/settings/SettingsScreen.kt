@@ -66,6 +66,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import moe.ouom.neriplayer.R as AppR
 import moe.ouom.neriplayer.common.R as CoreCommonR
 import moe.ouom.neriplayer.data.settings.background.BackgroundImageStorage
 import moe.ouom.neriplayer.data.settings.generated.AutoSettingsKeys
@@ -210,9 +211,11 @@ internal fun SettingsScreen(
 
     // 各种对话框和弹窗的显示状态 //
     var showQualityDialog by remember { mutableStateOf(false) }
+    var showQqMusicQualityDialog by remember { mutableStateOf(false) }
     var showYouTubeQualityDialog by remember { mutableStateOf(false) }
     var showBiliQualityDialog by remember { mutableStateOf(false) }
     var showMobileDataNeteaseQualityDialog by remember { mutableStateOf(false) }
+    var showMobileDataQqMusicQualityDialog by remember { mutableStateOf(false) }
     var showMobileDataYouTubeQualityDialog by remember { mutableStateOf(false) }
     var showMobileDataBiliQualityDialog by remember { mutableStateOf(false) }
     var showDefaultStartDestinationDialog by remember { mutableStateOf(false) }
@@ -252,9 +255,11 @@ internal fun SettingsScreen(
     val qualityPresentation = rememberSettingsQualityPresentation(
         context = context,
         neteaseValue = playbackState.defaultAudioQuality.preferredQuality,
+        qqMusicValue = playbackState.defaultAudioQuality.qqMusicPreferredQuality,
         youtubeValue = playbackState.defaultAudioQuality.youtubePreferredQuality,
         biliValue = playbackState.defaultAudioQuality.biliPreferredQuality,
         mobileNeteaseValue = playbackState.mobileAudioQuality.mobileDataNeteaseAudioQuality,
+        mobileQqMusicValue = playbackState.mobileAudioQuality.mobileDataQqMusicAudioQuality,
         mobileYouTubeValue = playbackState.mobileAudioQuality.mobileDataYouTubeAudioQuality,
         mobileBiliValue = playbackState.mobileAudioQuality.mobileDataBiliAudioQuality
     )
@@ -1008,6 +1013,35 @@ internal fun SettingsScreen(
                                         playbackActions.onNeteaseAutoSourceSwitchChange(!playbackState.playbackSources.neteaseAutoSourceSwitch)
                                     }
                                 )
+                                AutoSettingsListItem(
+                                    setting = AutoSettingsMetadata.requireSetting(
+                                        AutoSettingsKeys.QQ_MUSIC_AUTO_SOURCE_SWITCH
+                                    ),
+                                    leadingContent = {
+                                        Icon(
+                                            painter = painterResource(AppR.drawable.ic_qq_music),
+                                            contentDescription = stringResource(
+                                                CoreCommonR.string.settings_qq_music_auto_source_switch
+                                            ),
+                                            modifier = Modifier.size(24.dp),
+                                            tint = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    },
+                                    trailingContent = {
+                                        MiuixSettingsSwitch(
+                                            checked = playbackState.playbackSources.qqMusicAutoSourceSwitch,
+                                            onCheckedChange = playbackActions.onQqMusicAutoSourceSwitchChange
+                                        )
+                                    },
+                                    highlightTargetId = settingsHighlightTargetId,
+                                    highlightPulse = settingsHighlightPulse,
+                                    onHighlightFinished = onSettingsHighlightFinished,
+                                    onClick = {
+                                        playbackActions.onQqMusicAutoSourceSwitchChange(
+                                            !playbackState.playbackSources.qqMusicAutoSourceSwitch
+                                        )
+                                    }
+                                )
                             }
                         },
 
@@ -1021,6 +1055,10 @@ internal fun SettingsScreen(
                                     qualityLabel = qualityPresentation.neteaseLabel,
                                     preferredQuality = playbackState.defaultAudioQuality.preferredQuality,
                                     onQualityChange = qualityActions.onQualityChange,
+                                    qqMusicQualityLabel = qualityPresentation.qqMusicLabel,
+                                    qqMusicPreferredQuality =
+                                        playbackState.defaultAudioQuality.qqMusicPreferredQuality,
+                                    onQqMusicQualityChange = qualityActions.onQqMusicQualityChange,
                                     youtubeQualityLabel = qualityPresentation.youtubeLabel,
                                     youtubePreferredQuality = playbackState.defaultAudioQuality.youtubePreferredQuality,
                                     onYouTubeQualityChange = qualityActions.onYouTubeQualityChange,
@@ -1034,6 +1072,12 @@ internal fun SettingsScreen(
                                     mobileDataNeteaseAudioQuality = qualityPresentation.mobileNeteaseValue,
                                     onMobileDataNeteaseAudioQualityChange =
                                         qualityActions.onMobileDataNeteaseAudioQualityChange,
+                                    mobileDataQqMusicQualityLabel =
+                                        qualityPresentation.mobileQqMusicLabel,
+                                    mobileDataQqMusicAudioQuality =
+                                        qualityPresentation.mobileQqMusicValue,
+                                    onMobileDataQqMusicAudioQualityChange =
+                                        qualityActions.onMobileDataQqMusicAudioQualityChange,
                                     mobileDataYouTubeQualityLabel = qualityPresentation.mobileYouTubeLabel,
                                     mobileDataYouTubeAudioQuality = qualityPresentation.mobileYouTubeValue,
                                     onMobileDataYouTubeAudioQualityChange =
@@ -1043,6 +1087,10 @@ internal fun SettingsScreen(
                                     onMobileDataBiliAudioQualityChange = qualityActions.onMobileDataBiliAudioQualityChange,
                                     showQualityDialog = showQualityDialog,
                                     onShowQualityDialogChange = { showQualityDialog = it },
+                                    showQqMusicQualityDialog = showQqMusicQualityDialog,
+                                    onShowQqMusicQualityDialogChange = {
+                                        showQqMusicQualityDialog = it
+                                    },
                                     showYouTubeQualityDialog = showYouTubeQualityDialog,
                                     onShowYouTubeQualityDialogChange = {
                                         showYouTubeQualityDialog = it
@@ -1052,6 +1100,11 @@ internal fun SettingsScreen(
                                     showMobileDataNeteaseQualityDialog = showMobileDataNeteaseQualityDialog,
                                     onShowMobileDataNeteaseQualityDialogChange = {
                                         showMobileDataNeteaseQualityDialog = it
+                                    },
+                                    showMobileDataQqMusicQualityDialog =
+                                        showMobileDataQqMusicQualityDialog,
+                                    onShowMobileDataQqMusicQualityDialogChange = {
+                                        showMobileDataQqMusicQualityDialog = it
                                     },
                                     showMobileDataYouTubeQualityDialog = showMobileDataYouTubeQualityDialog,
                                     onShowMobileDataYouTubeQualityDialogChange = {

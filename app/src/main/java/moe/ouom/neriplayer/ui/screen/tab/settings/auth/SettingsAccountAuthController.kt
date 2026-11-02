@@ -18,6 +18,8 @@ import kotlinx.coroutines.CoroutineScope
 import moe.ouom.neriplayer.common.R as CoreCommonR
 import moe.ouom.neriplayer.ui.viewmodel.auth.BiliAuthEvent
 import moe.ouom.neriplayer.ui.viewmodel.auth.BiliAuthViewModel
+import moe.ouom.neriplayer.ui.viewmodel.auth.QQMusicAuthEvent
+import moe.ouom.neriplayer.ui.viewmodel.auth.QQMusicAuthViewModel
 import moe.ouom.neriplayer.ui.viewmodel.auth.YouTubeAuthEvent
 import moe.ouom.neriplayer.ui.viewmodel.auth.YouTubeAuthViewModel
 import moe.ouom.neriplayer.ui.viewmodel.debug.NeteaseAuthEvent
@@ -26,7 +28,8 @@ import moe.ouom.neriplayer.ui.viewmodel.debug.NeteaseAuthViewModel
 internal class SettingsAuthDialogState(
     val biliTab: MutableIntState,
     val neteaseTab: MutableIntState,
-    val youtubeTab: MutableIntState
+    val youtubeTab: MutableIntState,
+    val qqMusicTab: MutableIntState = mutableIntStateOf(0)
 ) {
     var showNeteaseSheet by mutableStateOf(false)
     var showNeteaseSavedCookieDialog by mutableStateOf(false)
@@ -36,6 +39,8 @@ internal class SettingsAuthDialogState(
     var showBiliSavedCookieDialog by mutableStateOf(false)
     var showYouTubeSheet by mutableStateOf(false)
     var showYouTubeSavedCookieDialog by mutableStateOf(false)
+    var showQQMusicSheet by mutableStateOf(false)
+    var showQQMusicSavedCookieDialog by mutableStateOf(false)
     var loginSuccessTitleRes by mutableStateOf<Int?>(null)
 }
 
@@ -43,6 +48,7 @@ internal class SettingsAccountAuthController(
     val neteaseVm: NeteaseAuthViewModel,
     val biliVm: BiliAuthViewModel,
     val youtubeVm: YouTubeAuthViewModel,
+    val qqMusicVm: QQMusicAuthViewModel,
     val dialogs: SettingsAuthDialogState,
     private val onInlineMessageChange: State<(UiText?) -> Unit>
 ) {
@@ -91,6 +97,19 @@ internal class SettingsAccountAuthController(
         }
     }
 
+    fun onQQMusicEvent(event: QQMusicAuthEvent) {
+        when (event) {
+            is QQMusicAuthEvent.ShowSnack -> onInlineMessageChange.value(event.message)
+            QQMusicAuthEvent.LoginSuccess -> {
+                dialogs.showQQMusicSavedCookieDialog = false
+                dialogs.showQQMusicSheet = false
+                dialogs.loginSuccessTitleRes = CoreCommonR.string.settings_qq_music_login_success
+                onInlineMessageChange.value(null)
+                qqMusicVm.refreshAuthHealth()
+            }
+        }
+    }
+
     fun openBiliAtTab(tab: Int) {
         onInlineMessageChange.value(null)
         dialogs.biliTab.intValue = tab
@@ -109,6 +128,12 @@ internal class SettingsAccountAuthController(
         dialogs.showYouTubeSheet = true
     }
 
+    fun openQQMusicAtTab(tab: Int) {
+        onInlineMessageChange.value(null)
+        dialogs.qqMusicTab.intValue = tab
+        dialogs.showQQMusicSheet = true
+    }
+
     fun openNeteaseSavedCookieDialog() {
         onInlineMessageChange.value(null)
         dialogs.showNeteaseSavedCookieDialog = true
@@ -124,17 +149,25 @@ internal class SettingsAccountAuthController(
         dialogs.showYouTubeSavedCookieDialog = true
     }
 
+    fun openQQMusicSavedCookieDialog() {
+        onInlineMessageChange.value(null)
+        dialogs.showQQMusicSavedCookieDialog = true
+    }
+
     fun openNeteaseSheet() = openNeteaseAtTab(0)
     fun openBiliSheet() = openBiliAtTab(0)
     fun openYouTubeSheet() = openYouTubeAtTab(0)
+    fun openQQMusicSheet() = openQQMusicAtTab(0)
 
     fun dismissNeteaseSheet() { dialogs.showNeteaseSheet = false }
     fun dismissBiliSheet() { dialogs.showBiliSheet = false }
     fun dismissYouTubeSheet() { dialogs.showYouTubeSheet = false }
+    fun dismissQQMusicSheet() { dialogs.showQQMusicSheet = false }
     fun dismissNeteaseConfirmDialog() { dialogs.showNeteaseConfirmDialog = false }
     fun dismissNeteaseSavedCookieDialog() { dialogs.showNeteaseSavedCookieDialog = false }
     fun dismissBiliSavedCookieDialog() { dialogs.showBiliSavedCookieDialog = false }
     fun dismissYouTubeSavedCookieDialog() { dialogs.showYouTubeSavedCookieDialog = false }
+    fun dismissQQMusicSavedCookieDialog() { dialogs.showQQMusicSavedCookieDialog = false }
     fun dismissLoginSuccess() { dialogs.loginSuccessTitleRes = null }
 
     fun logoutNetease() {
@@ -151,6 +184,11 @@ internal class SettingsAccountAuthController(
         dismissYouTubeSavedCookieDialog()
         youtubeVm.clearAuth()
     }
+
+    fun logoutQQMusic() {
+        dismissQQMusicSavedCookieDialog()
+        qqMusicVm.clearCookies()
+    }
 }
 
 internal class SettingsAccountAuthActions(controller: SettingsAccountAuthController) {
@@ -159,7 +197,7 @@ internal class SettingsAccountAuthActions(controller: SettingsAccountAuthControl
             SettingsAccountPlatform.Netease -> openNeteaseSheet()
             SettingsAccountPlatform.Bilibili -> openBiliSheet()
             SettingsAccountPlatform.YouTube -> openYouTubeSheet()
-            SettingsAccountPlatform.QqMusic -> Unit
+            SettingsAccountPlatform.QqMusic -> openQQMusicSheet()
         }
     }
 
@@ -168,7 +206,7 @@ internal class SettingsAccountAuthActions(controller: SettingsAccountAuthControl
             SettingsAccountPlatform.Netease -> openNeteaseSavedCookieDialog()
             SettingsAccountPlatform.Bilibili -> openBiliSavedCookieDialog()
             SettingsAccountPlatform.YouTube -> openYouTubeSavedCookieDialog()
-            SettingsAccountPlatform.QqMusic -> Unit
+            SettingsAccountPlatform.QqMusic -> openQQMusicSavedCookieDialog()
         }
     }
 
@@ -191,6 +229,12 @@ internal class SettingsAccountAuthActions(controller: SettingsAccountAuthControl
     val openYouTubeSavedCookieDialog: () -> Unit = controller::openYouTubeSavedCookieDialog
     val openYouTubeSheet: () -> Unit = controller::openYouTubeSheet
     val logoutYouTube: () -> Unit = controller::logoutYouTube
+    val dismissQQMusicSheet: () -> Unit = controller::dismissQQMusicSheet
+    val dismissQQMusicSavedCookieDialog: () -> Unit = controller::dismissQQMusicSavedCookieDialog
+    val openQQMusicAtTab: (Int) -> Unit = controller::openQQMusicAtTab
+    val openQQMusicSavedCookieDialog: () -> Unit = controller::openQQMusicSavedCookieDialog
+    val openQQMusicSheet: () -> Unit = controller::openQQMusicSheet
+    val logoutQQMusic: () -> Unit = controller::logoutQQMusic
     val dismissLoginSuccess: () -> Unit = controller::dismissLoginSuccess
 }
 
@@ -206,6 +250,9 @@ private class SettingsAuthEventEffects(
     val youtube: suspend CoroutineScope.() -> Unit = {
         controller.youtubeVm.events.collect(controller::onYouTubeEvent)
     }
+    val qqMusic: suspend CoroutineScope.() -> Unit = {
+        controller.qqMusicVm.events.collect(controller::onQQMusicEvent)
+    }
 }
 
 @Composable
@@ -215,20 +262,25 @@ internal fun rememberSettingsAccountAuthController(
     val neteaseVm: NeteaseAuthViewModel = viewModel()
     val biliVm: BiliAuthViewModel = viewModel()
     val youtubeVm: YouTubeAuthViewModel = viewModel()
+    val qqMusicVm: QQMusicAuthViewModel = viewModel()
     val biliTab = rememberSaveable { mutableIntStateOf(0) }
     val neteaseTab = rememberSaveable { mutableIntStateOf(0) }
     val youtubeTab = rememberSaveable { mutableIntStateOf(0) }
-    val dialogState = remember { SettingsAuthDialogState(biliTab, neteaseTab, youtubeTab) }
+    val qqMusicTab = rememberSaveable { mutableIntStateOf(0) }
+    val dialogState = remember {
+        SettingsAuthDialogState(biliTab, neteaseTab, youtubeTab, qqMusicTab)
+    }
     val latestInlineMessageChange = rememberUpdatedState(onInlineMessageChange)
-    val controller = remember(neteaseVm, biliVm, youtubeVm, dialogState) {
+    val controller = remember(neteaseVm, biliVm, youtubeVm, qqMusicVm, dialogState) {
         SettingsAccountAuthController(
-            neteaseVm, biliVm, youtubeVm, dialogState, latestInlineMessageChange
+            neteaseVm, biliVm, youtubeVm, qqMusicVm, dialogState, latestInlineMessageChange
         )
     }
     val effects = SettingsAuthEventEffects(controller)
     LaunchedEffect(neteaseVm, block = effects.netease)
     LaunchedEffect(biliVm, block = effects.bili)
     LaunchedEffect(youtubeVm, block = effects.youtube)
+    LaunchedEffect(qqMusicVm, block = effects.qqMusic)
     return controller
 }
 
@@ -241,6 +293,7 @@ internal fun SettingsAccountAuthDialogs(
     SettingsNeteaseAccountAuthDialogs(controller, inlineMessage, onInlineMessageChange)
     SettingsBiliAccountAuthDialogs(controller, inlineMessage, onInlineMessageChange)
     SettingsYouTubeAccountAuthDialogs(controller, inlineMessage, onInlineMessageChange)
+    SettingsQQMusicAccountAuthDialogs(controller, inlineMessage, onInlineMessageChange)
     SettingsAccountLoginSuccessDialog(controller)
 }
 
@@ -309,6 +362,27 @@ private fun SettingsYouTubeAccountAuthDialogs(
         onDismissSavedCookieDialog = controller.actions.dismissYouTubeSavedCookieDialog,
         onOpenSheetAtTab = controller.actions.openYouTubeAtTab,
         onLogout = controller.actions.logoutYouTube
+    )
+}
+
+@Composable
+private fun SettingsQQMusicAccountAuthDialogs(
+    controller: SettingsAccountAuthController,
+    inlineMessage: UiText?,
+    onInlineMessageChange: (UiText?) -> Unit
+) {
+    val dialogs = controller.dialogs
+    SettingsQQMusicAuthDialogs(
+        showSheet = dialogs.showQQMusicSheet,
+        initialTab = dialogs.qqMusicTab.intValue,
+        onDismissSheet = controller.actions.dismissQQMusicSheet,
+        inlineMsg = inlineMessage,
+        onInlineMsgChange = onInlineMessageChange,
+        vm = controller.qqMusicVm,
+        showSavedCookieDialog = dialogs.showQQMusicSavedCookieDialog,
+        onDismissSavedCookieDialog = controller.actions.dismissQQMusicSavedCookieDialog,
+        onOpenSheetAtTab = controller.actions.openQQMusicAtTab,
+        onLogout = controller.actions.logoutQQMusic
     )
 }
 

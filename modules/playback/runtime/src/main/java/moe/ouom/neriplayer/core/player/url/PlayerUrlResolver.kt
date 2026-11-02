@@ -57,6 +57,22 @@ internal fun qualityLabelForYouTube(key: String, getLocalizedString: (Int) -> St
     else -> key
 }
 
+internal fun qualityLabelForQqMusic(key: String, getLocalizedString: (Int) -> String): String = when (key) {
+    "standard" -> getLocalizedString(CoreCommonR.string.quality_standard)
+    "exhigh" -> getLocalizedString(CoreCommonR.string.quality_very_high)
+    "lossless" -> getLocalizedString(CoreCommonR.string.quality_lossless)
+    "preview" -> getLocalizedString(CoreCommonR.string.quality_preview)
+    else -> key
+}
+
+internal fun buildQqMusicQualityOptions(
+    getLocalizedString: (Int) -> String
+): List<PlaybackQualityOption> = listOf(
+    PlaybackQualityOption("standard", qualityLabelForQqMusic("standard", getLocalizedString)),
+    PlaybackQualityOption("exhigh", qualityLabelForQqMusic("exhigh", getLocalizedString)),
+    PlaybackQualityOption("lossless", qualityLabelForQqMusic("lossless", getLocalizedString))
+)
+
 internal fun buildNeteaseQualityOptions(getLocalizedString: (Int) -> String): List<PlaybackQualityOption> = listOf(
     PlaybackQualityOption("standard", qualityLabelForNetease("standard", getLocalizedString)),
     PlaybackQualityOption("higher", qualityLabelForNetease("higher", getLocalizedString)),

@@ -55,6 +55,7 @@ import moe.ouom.neriplayer.data.model.stableKey
 import moe.ouom.neriplayer.platform.youtube.api.transport.buildYouTubeStreamRequestHeaders
 import moe.ouom.neriplayer.platform.youtube.media.isYouTubeMusicSong
 import moe.ouom.neriplayer.data.model.settings.download.DownloadAudioQualitySelection
+import moe.ouom.neriplayer.data.model.qqmusic.auth.QQMusicAuthBundle
 import moe.ouom.neriplayer.data.traffic.hasConfirmedInternetAccess
 import okhttp3.Request
 import java.io.File
@@ -395,6 +396,10 @@ internal suspend fun AudioDownloadManager.resolveDownloadSourceForAttempt(
                 song = song,
                 preferredQuality = downloadAudioQuality.biliQuality
             )
+            AudioDownloadSourceResolver.isQQMusicSource(song) -> resolveQQMusic(
+                song = song,
+                preferredQuality = downloadAudioQuality.qqMusicQuality
+            )
             else -> resolveNetease(
                 songId = song.id,
                 preferredQuality = downloadAudioQuality.neteaseQuality
@@ -442,6 +447,7 @@ internal suspend fun AudioDownloadManager.prepareDownloadAttempt(
             "下载来源长度提示: file=$fileName, sourceExpected=$sourceExpectedBytes"
         )
     }
+    var fallbackRequests: List<Request> = emptyList()
     val request = when {
         AudioDownloadSourceResolver.isBiliSource(song) -> {
             buildBiliAudioDownloadRequest(url, DownloadHosts.credentials.biliCookies())
@@ -454,6 +460,14 @@ internal suspend fun AudioDownloadManager.prepareDownloadAttempt(
                     streamUrl = url
                 ).forEach { (name, value) -> header(name, value) }
             }.build()
+        }
+        AudioDownloadSourceResolver.isQQMusicSource(song) -> {
+            val auth = DownloadHosts.credentials.qqMusicAuth()
+            fallbackRequests = resolved.candidateUrls
+                .filterNot { it == url }
+                .distinct()
+                .map { candidate -> buildQQMusicAudioDownloadRequest(candidate, auth) }
+            buildQQMusicAudioDownloadRequest(url, auth)
         }
         else -> Request.Builder().url(url).build()
     }
@@ -538,8 +552,30 @@ internal suspend fun AudioDownloadManager.prepareDownloadAttempt(
         transportKind = transportKind,
         fileName = fileName,
         mimeType = mime,
-        workingFile = workingFile
+        workingFile = workingFile,
+        fallbackRequests = fallbackRequests
     )
+}
+
+internal fun buildQQMusicAudioDownloadRequest(
+    url: String,
+    auth: QQMusicAuthBundle
+): Request {
+    return Request.Builder()
+        .url(url)
+        .header("Referer", "https://y.qq.com/")
+        .header("User-Agent", "QQMusic 14090008(android 10)")
+        .apply {
+            if (auth.cookies.isNotEmpty()) {
+                header(
+                    "Cookie",
+                    auth.cookies.entries.joinToString("; ") { (key, value) ->
+                        "$key=$value"
+                    }
+                )
+            }
+        }
+        .build()
 }
 
 internal suspend fun AudioDownloadManager.reconcileWorkingFileWithDurableCheckpoint(
@@ -633,6 +669,7 @@ internal suspend fun AudioDownloadManager.transferAndCommitDownloadAttempt(
                 transportKind = prepared.transportKind,
                 resolved = prepared.resolved,
                 request = prepared.request,
+                fallbackRequests = prepared.fallbackRequests,
                 workingFile = prepared.workingFile,
                 fileName = prepared.fileName,
                 workingSong = prepared.workingSong,
@@ -935,8 +972,11 @@ internal suspend fun AudioDownloadManager.handleDownloadAttemptFailure(
         )
     }
     clearPartialSidecarReferences(songKey, operationId = effectiveOperationId)
+    val qqMusicSourceNeedsRefresh =
+        AudioDownloadSourceResolver.isQQMusicSource(song) &&
+            shouldRetryQQMusicDownloadFailure(error)
     val retryableFailure = state.storedAudio == null &&
-        shouldRetryDownloadFailureForSource(error, isYouTubeMusic)
+        (shouldRetryDownloadFailureForSource(error, isYouTubeMusic) || qqMusicSourceNeedsRefresh)
     val retryAfterMs = SubsonicException.find(error)?.takeIf { it.retryable }
         ?.retryAfterMs?.takeIf { it > 0L }
     if (retryableFailure && retryAfterMs == null && state.attemptNumber < TRANSIENT_DOWNLOAD_MAX_ATTEMPTS) {
@@ -1020,6 +1060,7 @@ internal suspend fun AudioDownloadManager.downloadPayloadForTransport(
     transportKind: DownloadTransportKind,
     resolved: ResolvedDownloadSource,
     request: Request,
+    fallbackRequests: List<Request>,
     workingFile: File,
     fileName: String,
     workingSong: SongItem,
@@ -1054,7 +1095,8 @@ internal suspend fun AudioDownloadManager.downloadPayloadForTransport(
             batchSessionId = batchSessionId,
             attemptId = attemptId,
             operationId = effectiveOperationId,
-            transferGeneration = transferGeneration
+            transferGeneration = transferGeneration,
+            fallbackRequests = fallbackRequests
         )
     }
 }

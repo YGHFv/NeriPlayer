@@ -4,4 +4,5 @@ package moe.ouom.neriplayer.data.model
 object SongSourceTags {
     const val BILIBILI = "Bilibili"
     const val NETEASE = "Netease"
+    const val QQ_MUSIC = "QQMusic"
 }

@@ -77,6 +77,7 @@ import moe.ouom.neriplayer.data.model.SongItem
 import moe.ouom.neriplayer.data.local.storage.source.lyricsCacheDirectory
 import moe.ouom.neriplayer.common.logging.NPLogger
 import moe.ouom.neriplayer.network.http.isTransientHttp2StreamReset
+import moe.ouom.neriplayer.data.model.ltw.track.ListenTogetherChannels
 import org.json.JSONObject
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -323,6 +324,7 @@ object PlayerLyricsProvider {
 
     private val neteaseRefreshInFlight = ConcurrentHashMap.newKeySet<Long>()
     private val neteaseColdLoadLocks = ConcurrentHashMap<Long, Mutex>()
+    private val qqMusicNativeLyricsCache = androidx.collection.LruCache<String, QQMusicNativeLyrics>(32)
     private val lyricsCacheGeneration = AtomicLong(0L)
     private val lyricsCacheStateLock = ReentrantReadWriteLock()
 
@@ -816,6 +818,62 @@ object PlayerLyricsProvider {
         }
     }
 
+    internal fun isQQMusicLyricSource(song: SongItem): Boolean =
+        song.channelId == ListenTogetherChannels.QQ_MUSIC ||
+            song.matchedLyricSource == MusicPlatform.QQ_MUSIC
+
+    internal fun qqMusicSongMid(song: SongItem): String? {
+        val matchedSource = song.matchedLyricSource == MusicPlatform.QQ_MUSIC
+        return if (matchedSource) {
+            song.matchedSongId?.trim()?.takeIf(String::isNotBlank)
+                ?: song.audioId?.trim()?.takeIf(String::isNotBlank)
+        } else {
+            song.audioId?.trim()?.takeIf(String::isNotBlank)
+                ?: song.matchedSongId?.trim()?.takeIf(String::isNotBlank)
+        }
+    }
+
+    private suspend fun getQQMusicNativeLyrics(song: SongItem): QQMusicNativeLyrics? {
+        val songMid = qqMusicSongMid(song) ?: return null
+        qqMusicNativeLyricsCache.get(songMid)?.let { return it }
+        return try {
+            val (lyric, translatedLyric) =
+                PlayerDependencies.repositories.qqMusicSearchApi.getNativeLyrics(songMid)
+            QQMusicNativeLyrics(
+                lyric = lyric,
+                translatedLyric = translatedLyric
+            ).takeIf { it.lyric != null || it.translatedLyric != null }?.also {
+                qqMusicNativeLyricsCache.put(songMid, it)
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            NPLogger.w(
+                "NERI-PlayerManager",
+                "QQ Music native lyric lookup failed: mid=$songMid, error=${error.javaClass.simpleName}"
+            )
+            null
+        }
+    }
+
+    internal suspend fun getQQMusicLyrics(song: SongItem): List<LyricEntry> {
+        val raw = getQQMusicNativeLyrics(song)?.lyric ?: return emptyList()
+        return parseMatchedExternalLyricEntries(
+            rawLyric = raw,
+            durationMs = song.durationMs,
+            logPrefix = "QQ 音乐歌词解析失败"
+        )
+    }
+
+    internal suspend fun getQQMusicTranslatedLyrics(song: SongItem): List<LyricEntry> {
+        val raw = getQQMusicNativeLyrics(song)?.translatedLyric ?: return emptyList()
+        return parseMatchedExternalLyricEntries(
+            rawLyric = raw,
+            durationMs = song.durationMs,
+            logPrefix = "QQ 音乐翻译歌词解析失败"
+        )
+    }
+
     suspend fun getNeteaseRomanizedLyrics(
         songId: Long,
         neteaseClient: NeteaseClient,
@@ -1021,13 +1079,14 @@ object PlayerLyricsProvider {
                 }
             }
 
-            when (song.matchedLyricSource) {
-                null,
-                MusicPlatform.CLOUD_MUSIC -> getNeteaseTranslatedLyrics(
-                    song.id,
-                    neteaseClient,
-                    neteaseLyricsCache
-                )
+            when {
+                isQQMusicLyricSource(song) -> getQQMusicTranslatedLyrics(song)
+                song.matchedLyricSource == null ||
+                    song.matchedLyricSource == MusicPlatform.CLOUD_MUSIC -> getNeteaseTranslatedLyrics(
+                        song.id,
+                        neteaseClient,
+                        neteaseLyricsCache
+                    )
                 else -> emptyList()
             }
         }
@@ -1266,7 +1325,7 @@ object PlayerLyricsProvider {
                     } else {
                         emptyList()
                     }
-                song.matchedLyricSource == MusicPlatform.QQ_MUSIC -> emptyList()
+                isQQMusicLyricSource(song) -> getQQMusicLyrics(song)
                 song.matchedLyricSource == MusicPlatform.CLOUD_MUSIC -> {
                     val matchedId = song.matchedSongId?.toLongOrNull() ?: song.id
                     getNeteaseLyrics(matchedId, neteaseClient, neteaseLyricsCache)
@@ -1444,6 +1503,22 @@ object PlayerLyricsProvider {
         peekPreferredLyricSourceResult(song, preference, preferWordTimed)?.let { return it }
         val cacheGeneration = currentLyricsCacheGeneration()
         val knownNeteaseId = resolveKnownNeteaseLyricSongId(song)
+        if (preference == LyricSourcePreference.QqMusic && isQQMusicLyricSource(song)) {
+            val lyrics = getQQMusicLyrics(song)
+            if (lyrics.isNotEmpty()) {
+                val result = PreferredLyricSourceResult(
+                    lyrics = lyrics,
+                    translatedLyrics = getQQMusicTranslatedLyrics(song),
+                    source = preference
+                )
+                withLyricsCacheWriteLock {
+                    if (lyricsCacheGeneration.get() == cacheGeneration) {
+                        preferredLyricSourceCache.put(cacheKey, result)
+                    }
+                }
+                return result
+            }
+        }
         if (preference == LyricSourcePreference.CloudMusic && knownNeteaseId != null) {
             // 网易云曲目按 ID 精确取词, 比文本搜索更准, 优先走这条路
             val matchedId = knownNeteaseId
@@ -1978,6 +2053,11 @@ object PlayerLyricsProvider {
         return null
     }
 }
+
+private data class QQMusicNativeLyrics(
+    val lyric: String?,
+    val translatedLyric: String?
+)
 
 private val automaticYouTubeExternalLyricSourceOrder = listOf(
     EditableLyricMatchSource.KUGOU,

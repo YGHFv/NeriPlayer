@@ -11,6 +11,7 @@
     <string name="settings_mobile_data_netease_audio_quality">NetEase mobile data quality</string>
     <string name="settings_mobile_data_youtube_audio_quality">YouTube mobile data quality</string>
     <string name="settings_mobile_data_bili_audio_quality">Bilibili mobile data quality</string>
+    <string name="settings_mobile_data_qq_music_audio_quality">QQ Music mobile data quality</string>
     <string name="settings_mobile_data_downgrade_quality">Mobile data downgrade quality</string>
     <string name="settings_mobile_data_downgrade_quality_desc">Automatically use a lower traffic quality on mobile data or roaming</string>
     <string name="traffic_stats_overview">Traffic Stats</string>

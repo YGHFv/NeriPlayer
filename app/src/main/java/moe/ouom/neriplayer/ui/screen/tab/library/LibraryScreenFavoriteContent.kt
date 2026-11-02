@@ -104,6 +104,7 @@ import moe.ouom.neriplayer.ui.feedback.AppFeedback
 import moe.ouom.neriplayer.ui.viewmodel.tab.AlbumSummary
 import moe.ouom.neriplayer.ui.viewmodel.tab.BiliPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.PlaylistSummary
+import moe.ouom.neriplayer.ui.viewmodel.tab.QQMusicPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.YouTubeMusicPlaylist
 import moe.ouom.neriplayer.ui.haptic.HapticIconButton
 import moe.ouom.neriplayer.ui.haptic.HapticTextButton
@@ -719,47 +720,198 @@ internal fun favoriteSourceLabel(source: String): String {
 
 @Composable
 internal fun QqMusicPlaylistList(
-    listState: LazyListState
+    playlists: List<QQMusicPlaylist>,
+    error: String?,
+    warning: String?,
+    loggedIn: Boolean,
+    refreshing: Boolean,
+    listState: LazyListState,
+    onClick: (QQMusicPlaylist) -> Unit,
+    onRetry: () -> Unit,
+    offlineMode: Boolean
 ) {
     val miniPlayerHeight = LocalMiniPlayerHeight.current
-
+    val context = LocalContext.current
     val cardShape = neriRoundedShape(12.dp)
     LazyColumn(
         state = listState,
-        contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp + miniPlayerHeight),
+        contentPadding = PaddingValues(
+            start = 8.dp,
+            end = 8.dp,
+            top = 8.dp,
+            bottom = 8.dp + miniPlayerHeight
+        ),
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.fillMaxSize()
     ) {
-        // TODO: Implement QQ Music playlist list when type is available
-        item {
+        if (!loggedIn) {
+            item {
+                QqMusicStatusCard(
+                    headline = stringResource(AppR.string.qq_music_library_login_required),
+                    supporting = stringResource(AppR.string.qq_music_library_login_hint),
+                    shape = cardShape
+                )
+            }
+            return@LazyColumn
+        }
+        if (refreshing && playlists.isEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(stringResource(AppR.string.qq_music_library_loading))
+                }
+            }
+            return@LazyColumn
+        }
+        if (error != null && playlists.isEmpty()) {
+            item {
+                QqMusicStatusCard(
+                    headline = stringResource(AppR.string.qq_music_library_load_failed),
+                    supporting = error,
+                    shape = cardShape
+                ) {
+                    HapticTextButton(onClick = onRetry) {
+                        Text(stringResource(CoreCommonR.string.action_retry))
+                    }
+                }
+            }
+            return@LazyColumn
+        }
+        if (playlists.isEmpty()) {
+            item {
+                QqMusicStatusCard(
+                    headline = stringResource(AppR.string.qq_music_library_empty),
+                    supporting = stringResource(AppR.string.qq_music_library_empty_hint),
+                    shape = cardShape
+                )
+            }
+            return@LazyColumn
+        }
+        if (warning != null) {
+            item {
+                QqMusicStatusCard(
+                    headline = stringResource(AppR.string.qq_music_library_partial),
+                    supporting = warning,
+                    shape = cardShape
+                ) {
+                    HapticTextButton(onClick = onRetry) {
+                        Text(stringResource(CoreCommonR.string.action_refresh))
+                    }
+                }
+            }
+        }
+        items(
+            items = playlists,
+            key = { "${it.kind}:${it.id}:${it.dirId}" }
+        ) { playlist ->
             Card(
+                onClick = { onClick(playlist) },
                 shape = cardShape,
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.Transparent
-                ),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                 modifier = Modifier
                     .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .clip(cardShape)
+                    .fillMaxWidth()
             ) {
+                val subtitle = when (playlist.kind) {
+                    moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicPlaylistKind.LIKED ->
+                        stringResource(AppR.string.qq_music_library_liked)
+                    moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicPlaylistKind.CREATED ->
+                        stringResource(AppR.string.qq_music_library_created)
+                    moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicPlaylistKind.FAVORITE ->
+                        stringResource(AppR.string.qq_music_library_favorite)
+                }
                 ListItem(
-                    headlineContent = { Text(stringResource(CoreCommonR.string.library_qqmusic_coming)) },
-                    supportingContent = {
-                        Text(stringResource(CoreCommonR.string.library_coming_soon), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    },
-                    colors = ListItemDefaults.colors(
-                        containerColor = Color.Transparent
-                    ),
-                    leadingContent = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.QueueMusic,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(56.dp)
+                    headlineContent = {
+                        Text(
+                            playlist.title,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
+                    },
+                    supportingContent = {
+                        Text(
+                            stringResource(
+                                AppR.string.qq_music_library_subtitle,
+                                playlist.trackCount,
+                                subtitle
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                    leadingContent = {
+                        if (playlist.coverUrl.isNotBlank()) {
+                            AsyncImage(
+                                model = offlineCachedImageRequest(
+                                    context = context,
+                                    data = playlist.coverUrl,
+                                    sizePx = 192,
+                                    offlineMode = offlineMode
+                                ),
+                                contentDescription = playlist.title,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(neriRoundedShape(8.dp))
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.QueueMusic,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(56.dp)
+                            )
+                        }
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun QqMusicStatusCard(
+    headline: String,
+    supporting: String,
+    shape: Shape,
+    action: (@Composable () -> Unit)? = null
+) {
+    Card(
+        shape = shape,
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        modifier = Modifier
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.QueueMusic,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(40.dp)
+            )
+            Spacer(Modifier.width(12.dp))
+            androidx.compose.foundation.layout.Column(Modifier.weight(1f)) {
+                Text(headline)
+                Text(
+                    supporting,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            action?.invoke()
         }
     }
 }

@@ -12,12 +12,14 @@ import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
+import okio.Buffer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Test
+import org.json.JSONObject
 
 class QQMusicLyricsRepositoryTest {
     private val requests = CopyOnWriteArrayList<Request>()
@@ -26,6 +28,10 @@ class QQMusicLyricsRepositoryTest {
         requests += request
         val body = when {
             request.url.host == "amll.test" -> "[]"
+            request.url.host == "u.y.qq.com" &&
+                request.method == "POST" &&
+                request.url.query == null ->
+                """{"code":0,"req_0":{"code":0,"data":{"body":{"song":{"list":[{"id":1,"mid":"id","name":"Signal","singer":[{"name":"Artist"}],"album":{"mid":"album","name":"Album"},"interval":180}]}},"meta":{"sum":1,"is_filter":0}}}}"""
             request.url.encodedPath.contains("client_search") ->
                 """{"data":{"song":{"list":[{"songmid":"id","songname":"Signal","singer":[{"name":"Artist"}],"albummid":"album","albumname":"Album","interval":180}]}}}"""
             request.url.queryParameter("data").orEmpty().contains("get_song_detail_yqq") ->
@@ -49,8 +55,9 @@ class QQMusicLyricsRepositoryTest {
         assertEquals("id", result.id)
         assertEquals("3:00", result.duration)
         assertEquals(MusicPlatform.QQ_MUSIC, result.source)
-        assertEquals("Signal Artist", requests.single().url.queryParameter("w"))
-        assertEquals("3", requests.single().url.queryParameter("p"))
+        val param = requests.single().bodyJson().getJSONObject("req_0").getJSONObject("param")
+        assertEquals("Signal Artist", param.getString("query"))
+        assertEquals(3, param.getInt("page_num"))
     }
 
     @Test
@@ -111,4 +118,10 @@ class QQMusicLyricsRepositoryTest {
         amllTtmlClient = AmllLyricsRepository(AmllTtmlClient(client, "https://amll.test")),
         amllLyricsEnabledProvider = enabled
     )
+
+    private fun Request.bodyJson(): JSONObject {
+        val buffer = Buffer()
+        requireNotNull(body).writeTo(buffer)
+        return JSONObject(buffer.readUtf8())
+    }
 }

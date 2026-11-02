@@ -9,6 +9,7 @@ import moe.ouom.neriplayer.data.settings.appearance.UiDensityScalePreference
 import moe.ouom.neriplayer.data.model.settings.appearance.UiStyle
 import moe.ouom.neriplayer.data.settings.download.DEFAULT_DOWNLOAD_BILI_AUDIO_QUALITY
 import moe.ouom.neriplayer.data.settings.download.DEFAULT_DOWNLOAD_NETEASE_AUDIO_QUALITY
+import moe.ouom.neriplayer.data.settings.download.DEFAULT_DOWNLOAD_QQ_MUSIC_AUDIO_QUALITY
 import moe.ouom.neriplayer.data.settings.download.DEFAULT_DOWNLOAD_YOUTUBE_AUDIO_QUALITY
 import moe.ouom.neriplayer.data.model.bilibili.subtitle.BILI_SUBTITLE_LANGUAGE_AUTO
 import moe.ouom.neriplayer.data.model.settings.lyrics.DEFAULT_AMLL_TTML_LYRIC_OFFSET_MS
@@ -23,6 +24,7 @@ import moe.ouom.neriplayer.data.model.settings.lyrics.FLOATING_LYRICS_RENDER_STY
 import moe.ouom.neriplayer.data.settings.lyrics.LyricSourcePreferencePolicy
 import moe.ouom.neriplayer.data.model.settings.playback.DEFAULT_MOBILE_DATA_BILI_AUDIO_QUALITY
 import moe.ouom.neriplayer.data.model.settings.playback.DEFAULT_MOBILE_DATA_NETEASE_AUDIO_QUALITY
+import moe.ouom.neriplayer.data.model.settings.playback.DEFAULT_MOBILE_DATA_QQ_MUSIC_AUDIO_QUALITY
 import moe.ouom.neriplayer.data.model.settings.playback.DEFAULT_MOBILE_DATA_YOUTUBE_AUDIO_QUALITY
 import moe.ouom.neriplayer.data.settings.playback.DEFAULT_PLAYBACK_SERVICE_IDLE_SHUTDOWN_MINUTES
 import moe.ouom.neriplayer.data.settings.playback.PlaybackServiceIdleShutdownPreference
@@ -378,6 +380,18 @@ object AutoSettingsSchema {
         )
 
         @AutoSetting(
+            key = "qq_music_audio_quality",
+            type = SettingValueType.String,
+            defaultString = "exhigh",
+            order = 35,
+            ui = SettingUiType.Custom,
+            access = SettingAccessMode.KeyOnly
+        )
+        val qqMusicAudioQuality = autoSetting(
+            titleRes = CoreCommonR.string.quality_qq_music_default
+        )
+
+        @AutoSetting(
             key = "mobile_data_follow_default_audio_quality",
             type = SettingValueType.Boolean,
             defaultBoolean = true,
@@ -428,6 +442,18 @@ object AutoSettingsSchema {
         val mobileDataBiliAudioQuality = autoSetting(
             titleRes = CoreCommonR.string.settings_mobile_data_bili_audio_quality,
             iconRes = CoreCommonR.drawable.ic_bilibili
+        )
+
+        @AutoSetting(
+            key = "mobile_data_qq_music_audio_quality",
+            type = SettingValueType.String,
+            defaultString = DEFAULT_MOBILE_DATA_QQ_MUSIC_AUDIO_QUALITY,
+            order = 75,
+            ui = SettingUiType.Custom,
+            access = SettingAccessMode.KeyOnly
+        )
+        val mobileDataQqMusicAudioQuality = autoSetting(
+            titleRes = CoreCommonR.string.settings_mobile_data_qq_music_audio_quality
         )
 
         @AutoSetting(
@@ -1657,7 +1683,22 @@ object AutoSettingsSchema {
             iconRes = CoreCommonR.drawable.ic_bilibili
         )
 
-        @AutoSetting(order = 50)
+        @AutoSetting(
+            key = "download_qq_music_audio_quality",
+            type = SettingValueType.String,
+            defaultString = DEFAULT_DOWNLOAD_QQ_MUSIC_AUDIO_QUALITY,
+            order = 50,
+            ui = SettingUiType.Custom,
+            access = SettingAccessMode.KeyOnly
+        )
+        val downloadQQMusicAudioQuality = autoStringSetting(
+            key = "download_qq_music_audio_quality",
+            defaultValue = DEFAULT_DOWNLOAD_QQ_MUSIC_AUDIO_QUALITY,
+            titleRes = CoreCommonR.string.settings_download_qq_music_audio_quality,
+            icon = AutoSettingIcon.LibraryMusic
+        )
+
+        @AutoSetting(order = 60)
         val downloadMetadataPostProcessingEnabled = autoSwitchSetting(
             key = "download_metadata_post_processing_enabled",
             defaultValue = true,
@@ -1666,7 +1707,7 @@ object AutoSettingsSchema {
             icon = AutoSettingIcon.AutoAwesome
         )
 
-        @AutoSetting(order = 60)
+        @AutoSetting(order = 70)
         val standardizedLyricEmbeddingEnabled = autoSwitchSetting(
             key = "standardized_lyric_embedding_enabled",
             defaultValue = false,
@@ -1676,7 +1717,7 @@ object AutoSettingsSchema {
         )
 
         @AutoSetting(
-            order = 70,
+            order = 80,
             ui = SettingUiType.Custom
         )
         val downloadParallelism = autoIntSetting(

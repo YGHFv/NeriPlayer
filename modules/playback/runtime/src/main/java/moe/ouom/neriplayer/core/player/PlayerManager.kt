@@ -134,6 +134,7 @@ import moe.ouom.neriplayer.core.player.playback.nextImpl
 import moe.ouom.neriplayer.core.player.playback.pauseImpl
 import moe.ouom.neriplayer.core.player.quality.effectiveBiliQuality
 import moe.ouom.neriplayer.core.player.quality.effectiveNeteaseQuality
+import moe.ouom.neriplayer.core.player.quality.effectiveQqMusicQuality
 import moe.ouom.neriplayer.core.player.quality.effectiveYouTubeQuality
 import moe.ouom.neriplayer.core.player.runtime.stats.PlaybackStatsOwner
 import moe.ouom.neriplayer.core.player.playback.AppPlaybackStatsWritePort
@@ -422,6 +423,9 @@ object PlayerManager {
     internal var biliPreferredQuality: String
         get() = playbackQualityOwner.biliPreferredQuality
         set(value) = playbackQualityOwner.setPreferredQuality(PlaybackAudioSource.BILIBILI, value)
+    internal var qqMusicPreferredQuality: String
+        get() = playbackQualityOwner.qqMusicPreferredQuality
+        set(value) = playbackQualityOwner.setPreferredQuality(PlaybackAudioSource.QQ_MUSIC, value)
 
     /**
      * 各平台的音质偏好, 供切换弹窗回显
@@ -433,6 +437,7 @@ object PlayerManager {
         get() = playbackQualityOwner.preferredKeys
     internal var mobileDataFollowDefaultAudioQuality = true
     internal var mobileDataNeteaseAudioQuality: String = "standard"
+    internal var mobileDataQqMusicAudioQuality: String = "standard"
     internal var mobileDataYouTubeAudioQuality: String = "low"
     internal var mobileDataBiliAudioQuality: String = "low"
     internal var playbackFadeInEnabled = true
@@ -489,6 +494,8 @@ object PlayerManager {
     internal var neteaseAutoSourceSwitchEnabled = false
     @Volatile
     internal var neteaseLocalSourceFallbackEnabled = false
+    @Volatile
+    internal var qqMusicAutoSourceSwitchEnabled = false
     internal var stopOnBluetoothDisconnectEnabled = true
     @Volatile
     var usbExclusivePlaybackEnabled = false
@@ -764,6 +771,7 @@ object PlayerManager {
     val biliRepo by lazy { PlayerDependencies.repositories.biliPlaybackRepository }
     val biliClient by lazy { PlayerDependencies.repositories.biliClient }
     val neteaseClient by lazy { PlayerDependencies.repositories.neteaseClient }
+    val qqMusicClient by lazy { PlayerDependencies.repositories.qqMusicClient }
     val youtubeMusicPlaybackRepository by lazy { PlayerDependencies.repositories.youtubeMusicPlaybackRepository }
     val youtubeMusicClient by lazy { PlayerDependencies.repositories.youtubeMusicClient }
 
@@ -1575,7 +1583,8 @@ object PlayerManager {
         neteaseFallbackEnabled = { neteaseAutoSourceSwitchEnabled || neteaseLocalSourceFallbackEnabled },
         youtubeQuality = ::effectiveYouTubeQuality,
         biliQuality = ::effectiveBiliQuality,
-        neteaseQuality = ::effectiveNeteaseQuality
+        neteaseQuality = ::effectiveNeteaseQuality,
+        qqMusicQuality = ::effectiveQqMusicQuality
     )
 
     internal fun buildNeteasePlaybackCacheKey(

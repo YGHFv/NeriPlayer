@@ -638,6 +638,7 @@ object AudioDownloadManager {
 
     internal data class ResolvedDownloadSource(
         val url: String,
+        val candidateUrls: List<String> = emptyList(),
         val mimeType: String? = null,
         val fileExtensionHint: String? = null,
         val streamType: YouTubePlayableStreamType = YouTubePlayableStreamType.DIRECT,
@@ -787,7 +788,8 @@ object AudioDownloadManager {
         val transportKind: DownloadTransportKind,
         val fileName: String,
         val mimeType: String?,
-        val workingFile: File
+        val workingFile: File,
+        val fallbackRequests: List<Request> = emptyList()
     )
 
     internal enum class DownloadAttemptFailureAction {
@@ -1561,6 +1563,9 @@ object AudioDownloadManager {
     internal fun shouldRefreshYouTubeDownloadSourceOnFailure(error: Throwable): Boolean =
         AudioDownloadTransferPolicy.shouldRefreshYouTubeDownloadSourceOnFailure(error)
 
+    internal fun shouldRetryQQMusicDownloadFailure(error: Throwable): Boolean =
+        AudioDownloadTransferPolicy.shouldRetryQQMusicDownloadFailure(error)
+
     internal fun isForbiddenYouTubeDownloadFailure(error: Throwable): Boolean =
         AudioDownloadTransferPolicy.isForbiddenYouTubeDownloadFailure(error)
 
@@ -1731,6 +1736,14 @@ object AudioDownloadManager {
         preferredQuality = preferredQuality
     )
 
+    internal suspend fun resolveQQMusic(
+        song: SongItem,
+        preferredQuality: String
+    ): ResolvedDownloadSource? = AudioDownloadSourceResolver.resolveQQMusic(
+        song = song,
+        preferredQuality = preferredQuality
+    )
+
     internal fun ensureHttps(url: String): String = AudioDownloadSourceResolver.ensureHttps(url)
 
     internal fun mimeToExt(mime: String): String? = AudioDownloadSourceResolver.mimeToExt(mime)
@@ -1762,7 +1775,8 @@ object AudioDownloadManager {
         batchSessionId: Long? = null,
         attemptId: Long? = null,
         operationId: String? = null,
-        transferGeneration: Long? = null
+        transferGeneration: Long? = null,
+        fallbackRequests: List<Request> = emptyList()
     ): DownloadedPayloadSummary = fileTransfer.download(
         client = client,
         request = request,
@@ -1773,7 +1787,8 @@ object AudioDownloadManager {
         batchSessionId = batchSessionId,
         attemptId = attemptId,
         operationId = operationId,
-        transferGeneration = transferGeneration
+        transferGeneration = transferGeneration,
+        fallbackRequests = fallbackRequests
     )
 
 }

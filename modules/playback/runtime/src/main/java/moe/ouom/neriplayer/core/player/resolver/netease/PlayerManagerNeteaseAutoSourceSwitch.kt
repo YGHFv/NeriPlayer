@@ -26,15 +26,38 @@ private val autoSourceWhitespaceRegex = Regex("\\s+")
 internal suspend fun PlayerManager.tryResolveNeteaseAutoBiliSource(
     song: SongItem,
     sideEffects: RefreshResolverSideEffects
+): SongUrlResult? = resolveAutoBiliSource(
+    song = song,
+    sideEffects = sideEffects,
+    sourceLabel = "Netease",
+    enabled = neteaseAutoSourceSwitchEnabled
+)
+
+internal suspend fun PlayerManager.tryResolveQqMusicAutoBiliSource(
+    song: SongItem,
+    sideEffects: RefreshResolverSideEffects
+): SongUrlResult? = resolveAutoBiliSource(
+    song = song,
+    sideEffects = sideEffects,
+    sourceLabel = "QQ Music",
+    enabled = qqMusicAutoSourceSwitchEnabled
+)
+
+private suspend fun PlayerManager.resolveAutoBiliSource(
+    song: SongItem,
+    sideEffects: RefreshResolverSideEffects,
+    sourceLabel: String,
+    enabled: Boolean
 ): SongUrlResult? {
-    if (!neteaseAutoSourceSwitchEnabled) return null
+    if (!enabled) return null
 
     val queries = buildNeteaseAutoSourceQueries(song)
     if (queries.isEmpty()) return null
 
     NPLogger.w(
         "NERI-PlayerManager",
-        "Netease source unavailable, trying Bili auto source: song=${song.name}, artist=${song.artist}"
+        "$sourceLabel source unavailable, trying Bili auto source: " +
+            "song=${song.name}, artist=${song.artist}"
     )
 
     val visitedCandidates = mutableSetOf<String>()

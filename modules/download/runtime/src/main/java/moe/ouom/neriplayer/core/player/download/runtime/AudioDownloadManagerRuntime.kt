@@ -591,7 +591,8 @@ internal suspend fun AudioDownloadManager.executeDownloadSong(
                 DownloadAudioQualitySelection.normalized(
                     neteaseQuality = quality.neteaseQuality,
                     youtubeQuality = quality.youtubeQuality,
-                    biliQuality = quality.biliQuality
+                    biliQuality = quality.biliQuality,
+                    qqMusicQuality = quality.qqMusicQuality
                 )
             }
             ?: resolveDownloadAudioQualitySelection(context)

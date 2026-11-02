@@ -35,7 +35,9 @@ internal fun rememberAuthLoginStorageStatus(platform: SettingsAccountPlatform): 
                     SettingsAccountPlatform.YouTube -> AppContainer.youtubeAuthRepo.let {
                         AuthLoginStorageStatus(it.requiresCompatibilityStorageWarning, it.isAuthStoragePersistent)
                     }
-                    SettingsAccountPlatform.QqMusic -> AuthLoginStorageStatus(false, false)
+                    SettingsAccountPlatform.QqMusic -> AppContainer.qqMusicAuthRepo.let {
+                        AuthLoginStorageStatus(it.requiresCompatibilityStorageWarning, it.isAuthStoragePersistent)
+                    }
                 }
             } catch (cancelled: CancellationException) {
                 throw cancelled

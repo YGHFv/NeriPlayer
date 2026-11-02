@@ -13,9 +13,12 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import moe.ouom.neriplayer.core.di.AppContainer
+import moe.ouom.neriplayer.data.model.qqmusic.auth.QQMusicAccountProfile
+import moe.ouom.neriplayer.data.model.qqmusic.auth.QQMusicAuthBundle
 import moe.ouom.neriplayer.data.model.youtube.auth.YouTubeAccountProfile
 import moe.ouom.neriplayer.data.model.youtube.auth.YouTubeAuthBundle
 import moe.ouom.neriplayer.platform.netease.api.client.NeteaseClient
+import moe.ouom.neriplayer.platform.qqmusic.api.profile.QQMusicAccountProfileClient
 import moe.ouom.neriplayer.platform.youtube.api.auth.normalized
 import moe.ouom.neriplayer.platform.youtube.api.client.YouTubeAccountProfileClient
 import moe.ouom.neriplayer.platform.youtube.config.YouTubeFeatureGate
@@ -80,6 +83,30 @@ internal class SettingsYouTubeAccountAuthorizationSnapshot(auth: YouTubeAuthBund
     override fun hashCode(): Int = identity.hashCode()
 
     override fun toString(): String = "SettingsYouTubeAccountAuthorizationSnapshot"
+}
+
+internal class SettingsQQMusicAccountAuthorizationSnapshot(auth: QQMusicAuthBundle) {
+    private val values = auth.normalized(savedAt = auth.savedAt)
+    val savedAt: Long = values.savedAt
+    val musicId: String? = values.musicId
+    val identity: String = listOf(
+        authorizationIdentity(values.cookies),
+        values.musicId.orEmpty(),
+        values.savedAt.toString()
+    ).joinToString(separator = "") { "${it.length}:$it" }.encodeUtf8().sha256().hex()
+
+    fun matches(auth: QQMusicAuthBundle): Boolean =
+        identity == SettingsQQMusicAccountAuthorizationSnapshot(auth).identity
+
+    suspend fun loadProfile(client: QQMusicAccountProfileClient): QQMusicAccountProfile? =
+        client.getAccountProfile(values)
+
+    override fun equals(other: Any?): Boolean =
+        other is SettingsQQMusicAccountAuthorizationSnapshot && identity == other.identity
+
+    override fun hashCode(): Int = identity.hashCode()
+
+    override fun toString(): String = "SettingsQQMusicAccountAuthorizationSnapshot"
 }
 
 internal data class SettingsAccountProfileState(
@@ -178,6 +205,16 @@ internal suspend fun loadYouTubeAccountProfileIfCurrent(
     val profile = loadProfile() ?: return null
     currentCoroutineContext().ensureActive()
     if (!isEnabled() || !authorization.matches(readCurrentAuth())) return null
+    return settingsAccountProfile(profile.nickname, profile.avatarUrl.orEmpty())
+}
+
+internal suspend fun loadQQMusicAccountProfile(
+    authorization: SettingsQQMusicAccountAuthorizationSnapshot
+): SettingsAccountProfile? {
+    if (!authorization.matches(AppContainer.qqMusicAuthRepo.getAuthOnce())) return null
+    val profile = authorization.loadProfile(AppContainer.qqMusicAccountProfileClient) ?: return null
+    currentCoroutineContext().ensureActive()
+    if (!authorization.matches(AppContainer.qqMusicAuthRepo.getAuthOnce())) return null
     return settingsAccountProfile(profile.nickname, profile.avatarUrl.orEmpty())
 }
 

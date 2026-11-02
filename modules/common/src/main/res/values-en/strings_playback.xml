@@ -48,6 +48,7 @@
     <string name="sleep_timer_cancel">Cancel Timer</string>
     <string name="sleep_timer_countdown">Countdown</string>
     <string name="quality_standard">Standard</string>
+    <string name="quality_preview">Preview</string>
     <string name="quality_high">High</string>
     <string name="quality_very_high">Very High</string>
     <string name="quality_lossless">Lossless</string>
@@ -59,6 +60,7 @@
     <string name="quality_netease_default">NetEase Default Quality</string>
     <string name="quality_bili_default">Bilibili Default Quality</string>
     <string name="quality_youtube_default">YouTube Default Quality</string>
+    <string name="quality_qq_music_default">QQ Music Default Quality</string>
     <string name="device_speaker">Speaker</string>
     <string name="device_wired_headset">Wired</string>
     <string name="device_bluetooth_headset">Bluetooth</string>
@@ -108,6 +110,7 @@
     <string name="player_playback_failed_with_code">Playback failed: %1$s</string>
     <string name="player_playback_login_required">Sign-in is required before this track can be played.</string>
     <string name="player_netease_preview_only">This track is limited to a preview clip on the current platform.</string>
+    <string name="player_qq_music_preview_only">This is a QQ Music preview clip. Full playback requires the appropriate account entitlement or membership.</string>
     <string name="player_netease_no_permission_switch_platform">This track is restricted on the current platform, possibly due to copyright, membership access, or the selected audio quality. Try lowering the audio quality or searching for it on another platform.</string>
     <string name="player_playback_video_info_unavailable">Video audio information is currently unavailable.</string>
     <string name="player_playback_url_error_detail">Failed to resolve playback URL: %1$s</string>

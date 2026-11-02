@@ -97,7 +97,7 @@ class ConfigFileManagerExportTest {
 
         val root = Json.parseToJsonElement(destination.readText()).jsonObject
         assertTrue("settings" in root)
-        for (section in listOf("neteaseAuth", "biliAuth", "youTubeAuth", "gitHubSync", "webDavSync")) {
+        for (section in listOf("neteaseAuth", "biliAuth", "qqMusicAuth", "youTubeAuth", "gitHubSync", "webDavSync")) {
             assertFalse("unexpected account section: $section", section in root)
         }
     }

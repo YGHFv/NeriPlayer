@@ -4,6 +4,7 @@ import moe.ouom.neriplayer.core.player.PlayerManager
 import moe.ouom.neriplayer.data.model.playback.PlaybackAudioSource
 import moe.ouom.neriplayer.data.settings.playback.normalizeMobileDataBiliAudioQuality
 import moe.ouom.neriplayer.data.settings.playback.normalizeMobileDataNeteaseAudioQuality
+import moe.ouom.neriplayer.data.settings.playback.normalizeMobileDataQqMusicAudioQuality
 import moe.ouom.neriplayer.data.settings.playback.normalizeMobileDataYouTubeAudioQuality
 import moe.ouom.neriplayer.data.model.traffic.TrafficNetworkType
 import moe.ouom.neriplayer.data.traffic.currentTrafficNetworkType
@@ -29,6 +30,13 @@ internal fun PlayerManager.effectiveBiliQuality(): String {
     )
 }
 
+internal fun PlayerManager.effectiveQqMusicQuality(): String {
+    return resolveTrafficAwareQuality(
+        source = PlaybackAudioSource.QQ_MUSIC,
+        defaultQuality = qqMusicPreferredQuality
+    )
+}
+
 private fun PlayerManager.resolveTrafficAwareQuality(
     source: PlaybackAudioSource,
     defaultQuality: String
@@ -51,6 +59,8 @@ private fun PlayerManager.resolveTrafficAwareQuality(
             normalizeMobileDataYouTubeAudioQuality(mobileDataYouTubeAudioQuality)
         PlaybackAudioSource.BILIBILI ->
             normalizeMobileDataBiliAudioQuality(mobileDataBiliAudioQuality)
+        PlaybackAudioSource.QQ_MUSIC ->
+            normalizeMobileDataQqMusicAudioQuality(mobileDataQqMusicAudioQuality)
         else -> defaultQuality
     }
 }

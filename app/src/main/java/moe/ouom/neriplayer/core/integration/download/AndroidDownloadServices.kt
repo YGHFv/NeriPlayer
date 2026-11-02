@@ -12,8 +12,10 @@ internal object AndroidDownloadServices : DownloadSourceServices, DownloadLyricS
     override val biliPlaybackRepository get() = AppContainer.biliPlaybackRepository
     override val youtubeMusicPlaybackRepository get() = AppContainer.youtubeMusicPlaybackRepository
     override val youtubeMusicDownloadPlaybackRepository get() = AppContainer.youtubeMusicDownloadPlaybackRepository
+    override val qqMusicClient get() = AppContainer.qqMusicClient
     override val youtubeMusicClient get() = AppContainer.youtubeMusicClient
     override val lrcLibClient get() = AppContainer.lrcLibClient
     override fun biliCookies() = AppContainer.biliCookieRepo.getCookiesOnce()
     override fun youtubeAuth() = AppContainer.youtubeAuthRepo.getAuthOnce()
+    override fun qqMusicAuth() = AppContainer.qqMusicAuthRepo.getAuthOnce()
 }

@@ -189,6 +189,12 @@ class SettingsRepositorySnapshotWriteThroughTest {
                 PlaybackPreferenceSnapshot::neteaseLocalSourceFallback
             ),
             PlaybackToggle(
+                "qqMusicAutoSourceSwitch",
+                repository::setQqMusicAutoSourceSwitch,
+                repository.qqMusicAutoSourceSwitchFlow,
+                PlaybackPreferenceSnapshot::qqMusicAutoSourceSwitch
+            ),
+            PlaybackToggle(
                 "stopOnBluetoothDisconnect",
                 repository::setStopOnBluetoothDisconnect,
                 repository.stopOnBluetoothDisconnectFlow,
@@ -244,6 +250,19 @@ class SettingsRepositorySnapshotWriteThroughTest {
         assertFalse(disabled.neteaseAutoSourceSwitch)
         assertFalse(disabled.neteaseLocalSourceFallback)
     }
+
+    @Test
+    fun `QQ Music quality choices persist to settings and the playback snapshot`() =
+        withIsolatedSettings { context, repository, _ ->
+            repository.setQqMusicAudioQuality(" LOSSLESS ")
+            repository.setMobileDataQqMusicAudioQuality("EXHIGH")
+
+            assertEquals("lossless", repository.qqMusicAudioQualityFlow.first())
+            assertEquals("exhigh", repository.mobileDataQqMusicAudioQualityFlow.first())
+            val cached = readPlaybackPreferenceSnapshotCached(context)!!
+            assertEquals("lossless", cached.qqMusicAudioQuality)
+            assertEquals("exhigh", cached.mobileDataQqMusicAudioQuality)
+        }
 
     @Test
     fun `custom equalizer levels are stored and cleared with the snapshot`() = withIsolatedSettings { context, repository, _ ->

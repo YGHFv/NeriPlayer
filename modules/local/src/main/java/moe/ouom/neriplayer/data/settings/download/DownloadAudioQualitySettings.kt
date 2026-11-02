@@ -16,6 +16,7 @@ import moe.ouom.neriplayer.common.coroutines.runCatchingNonCancellation
 internal const val DEFAULT_DOWNLOAD_NETEASE_AUDIO_QUALITY = "exhigh"
 internal const val DEFAULT_DOWNLOAD_YOUTUBE_AUDIO_QUALITY = "high"
 internal const val DEFAULT_DOWNLOAD_BILI_AUDIO_QUALITY = "high"
+internal const val DEFAULT_DOWNLOAD_QQ_MUSIC_AUDIO_QUALITY = "exhigh"
 
 private val DOWNLOAD_NETEASE_AUDIO_QUALITIES = setOf(
     "standard",
@@ -44,6 +45,12 @@ private val DOWNLOAD_BILI_AUDIO_QUALITIES = setOf(
     "dolby"
 )
 
+private val DOWNLOAD_QQ_MUSIC_AUDIO_QUALITIES = setOf(
+    "standard",
+    "exhigh",
+    "lossless"
+)
+
 fun normalizeDownloadNeteaseAudioQuality(value: String?): String {
     val normalized = value.orEmpty().trim().lowercase()
     return normalized.takeIf { it in DOWNLOAD_NETEASE_AUDIO_QUALITIES }
@@ -62,6 +69,12 @@ fun normalizeDownloadBiliAudioQuality(value: String?): String {
         ?: DEFAULT_DOWNLOAD_BILI_AUDIO_QUALITY
 }
 
+fun normalizeDownloadQQMusicAudioQuality(value: String?): String {
+    val normalized = value.orEmpty().trim().lowercase()
+    return normalized.takeIf { it in DOWNLOAD_QQ_MUSIC_AUDIO_QUALITIES }
+        ?: DEFAULT_DOWNLOAD_QQ_MUSIC_AUDIO_QUALITY
+}
+
 fun resolveDownloadAudioQualitySelection(
     followsPlaybackQuality: Boolean,
     playbackNeteaseQuality: String?,
@@ -69,19 +82,23 @@ fun resolveDownloadAudioQualitySelection(
     playbackBiliQuality: String?,
     downloadNeteaseQuality: String?,
     downloadYouTubeQuality: String?,
-    downloadBiliQuality: String?
+    downloadBiliQuality: String?,
+    playbackQQMusicQuality: String? = null,
+    downloadQQMusicQuality: String? = null
 ): DownloadAudioQualitySelection {
     return if (followsPlaybackQuality) {
         DownloadAudioQualitySelection.normalized(
             neteaseQuality = playbackNeteaseQuality,
             youtubeQuality = playbackYouTubeQuality,
-            biliQuality = playbackBiliQuality
+            biliQuality = playbackBiliQuality,
+            qqMusicQuality = playbackQQMusicQuality
         )
     } else {
         DownloadAudioQualitySelection.normalized(
             neteaseQuality = downloadNeteaseQuality,
             youtubeQuality = downloadYouTubeQuality,
-            biliQuality = downloadBiliQuality
+            biliQuality = downloadBiliQuality,
+            qqMusicQuality = downloadQQMusicQuality
         )
     }
 }
@@ -107,13 +124,17 @@ suspend fun resolveDownloadAudioQualitySelection(
             ),
             downloadBiliQuality = preferences.valueOf(
                 AutoSettingsSchema.download.downloadBiliAudioQuality
+            ),
+            downloadQQMusicQuality = preferences.valueOf(
+                AutoSettingsSchema.download.downloadQQMusicAudioQuality
             )
         )
     }.getOrElse {
         DownloadAudioQualitySelection.normalized(
             neteaseQuality = DEFAULT_DOWNLOAD_NETEASE_AUDIO_QUALITY,
             youtubeQuality = DEFAULT_DOWNLOAD_YOUTUBE_AUDIO_QUALITY,
-            biliQuality = DEFAULT_DOWNLOAD_BILI_AUDIO_QUALITY
+            biliQuality = DEFAULT_DOWNLOAD_BILI_AUDIO_QUALITY,
+            qqMusicQuality = DEFAULT_DOWNLOAD_QQ_MUSIC_AUDIO_QUALITY
         )
     }
 }
@@ -148,11 +169,13 @@ fun updateDownloadFollowPlaybackAudioQualityStartupValue(
 fun DownloadAudioQualitySelection.Companion.normalized(
     neteaseQuality: String?,
     youtubeQuality: String?,
-    biliQuality: String?
+    biliQuality: String?,
+    qqMusicQuality: String? = null
 ): DownloadAudioQualitySelection {
     return DownloadAudioQualitySelection(
         neteaseQuality = normalizeDownloadNeteaseAudioQuality(neteaseQuality),
         youtubeQuality = normalizeDownloadYouTubeAudioQuality(youtubeQuality),
-        biliQuality = normalizeDownloadBiliAudioQuality(biliQuality)
+        biliQuality = normalizeDownloadBiliAudioQuality(biliQuality),
+        qqMusicQuality = normalizeDownloadQQMusicAudioQuality(qqMusicQuality)
     )
 }

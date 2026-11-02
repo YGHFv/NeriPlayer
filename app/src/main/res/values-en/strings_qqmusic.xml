@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="qq_music_library_created">Created</string>
+    <string name="qq_music_library_empty">No QQ Music playlists</string>
+    <string name="qq_music_library_empty_hint">Playlists you create or collect will appear here</string>
+    <string name="qq_music_library_favorite">Collected</string>
+    <string name="qq_music_library_liked">Liked</string>
+    <string name="qq_music_library_load_failed">Failed to load QQ Music playlists</string>
+    <string name="qq_music_library_loading">Loading QQ Music playlists…</string>
+    <string name="qq_music_library_login_hint">Sign in to QQ Music in Settings to view account playlists</string>
+    <string name="qq_music_library_login_required">QQ Music sign-in required</string>
+    <string name="qq_music_library_partial">Some playlists failed to load</string>
+    <string name="qq_music_library_subtitle">%1$d tracks · %2$s</string>
+    <string name="qq_music_web_login">QQ Music Web Login</string>
+    <string name="qq_music_qr_login">QQ Music QR Login</string>
+    <string name="qq_music_qr_login_title">Connect your QQ Music account</string>
+    <string name="qq_music_qr_login_subtitle">Choose QQ or WeChat, scan the code and confirm sign-in on your phone.</string>
+    <string name="qq_music_qr_login_loading">Creating QR code…</string>
+    <string name="qq_music_qr_login_waiting_qq">Scan with QQ on your phone</string>
+    <string name="qq_music_qr_login_waiting_wechat">Scan with WeChat</string>
+    <string name="qq_music_qr_login_scanned">Scanned. Confirm sign-in on your phone</string>
+    <string name="qq_music_qr_login_refused">Sign-in was cancelled on your phone. Refresh the QR code and try again</string>
+    <string name="qq_music_qr_login_expired">QR code expired. Refresh it</string>
+    <string name="qq_music_qr_login_failed">QR login failed: %1$s</string>
+    <string name="qq_music_qr_login_retry">Refresh QR code</string>
+    <string name="qq_music_qr_login_web_fallback">Use web login fallback</string>
+    <string name="qq_music_qr_login_cookie_incomplete">Sign-in was confirmed, but the credentials were incomplete. Try again</string>
+    <string name="qq_music_qr_login_hint">The QR code comes from the QQ Music login service. The app watches confirmation and stores the credentials; use web login if risk controls block QR login.</string>
+    <string name="qq_music_qr_login_channel_qq">QQ</string>
+    <string name="qq_music_qr_login_channel_wechat">WeChat</string>
+    <string name="qq_music_qr_login_invalid_image">The login service returned an invalid QR image</string>
+    <string name="qq_music_name">QQ Music</string>
+    <string name="qq_music_search_placeholder">Search QQ Music</string>
+    <string name="qq_music_explore_hint">Enter a keyword to search QQ Music</string>
+    <string name="qq_music_explore_login_hint">Some tracks and qualities require sign-in. Log in to QQ Music in Settings.</string>
+</resources>

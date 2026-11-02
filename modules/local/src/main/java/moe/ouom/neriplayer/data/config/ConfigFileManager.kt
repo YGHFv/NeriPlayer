@@ -28,6 +28,7 @@ import moe.ouom.neriplayer.data.model.transfer.TransferStateException
 import moe.ouom.neriplayer.data.listentogether.ListenTogetherPreferences
 import moe.ouom.neriplayer.platform.bilibili.auth.BiliCookieRepository
 import moe.ouom.neriplayer.platform.netease.auth.NeteaseCookieRepository
+import moe.ouom.neriplayer.platform.qqmusic.auth.QQMusicAuthRepository
 import moe.ouom.neriplayer.platform.youtube.auth.YouTubeAuthRepository
 import moe.ouom.neriplayer.data.model.youtube.auth.YouTubeAuthBundle
 import moe.ouom.neriplayer.data.model.youtube.auth.YOUTUBE_MUSIC_ORIGIN
@@ -58,7 +59,8 @@ class ConfigFileManager(
     youTubeAuthRepo: YouTubeAuthRepository? = null,
     upgradeRepository: SyncProtocolUpgradeRepository? = null,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val withYouTubeAuthChange: suspend (() -> Unit) -> Unit = { updateAuth -> updateAuth() }
+    private val withYouTubeAuthChange: suspend (() -> Unit) -> Unit = { updateAuth -> updateAuth() },
+    qqMusicAuthRepo: QQMusicAuthRepository? = null
 ) {
     private val listenTogetherRepository by lazy {
         listenTogetherPreferences ?: ListenTogetherPreferences(context)
@@ -66,6 +68,7 @@ class ConfigFileManager(
     private val neteaseRepository by lazy { neteaseCookieRepo ?: NeteaseCookieRepository(context) }
     private val biliRepository by lazy { biliCookieRepo ?: BiliCookieRepository(context) }
     private val youTubeRepository by lazy { youTubeAuthRepo ?: YouTubeAuthRepository(context) }
+    private val qqMusicRepository by lazy { qqMusicAuthRepo ?: QQMusicAuthRepository(context) }
     private val syncUpgradeRepository by lazy { upgradeRepository ?: SyncProtocolUpgradeRepository(context) }
 
     companion object {
@@ -111,6 +114,12 @@ class ConfigFileManager(
                     )
                 },
                 biliAuth = biliRepository.run {
+                    SavedCookieConfigSnapshot(
+                        cookies = getCookiesOnce(),
+                        savedAt = getAuthHealthOnce().savedAt
+                    )
+                },
+                qqMusicAuth = qqMusicRepository.run {
                     SavedCookieConfigSnapshot(
                         cookies = getCookiesOnce(),
                         savedAt = getAuthHealthOnce().savedAt
@@ -216,6 +225,17 @@ class ConfigFileManager(
             }
             requiresConfirmation = requiresConfirmation ||
                 (payload.biliAuth.hasData() && biliRepository.requiresCompatibilityStorageWarning)
+        }
+        if (sections.qqMusicAuth) {
+            if (!qqMusicRepository.isAuthStoragePersistent) {
+                throw TransferStateException(
+                    TransferFailureKind.AUTH_STORAGE_UNAVAILABLE,
+                    "Authentication storage unavailable"
+                )
+            }
+            requiresConfirmation = requiresConfirmation ||
+                (payload.qqMusicAuth.hasData() &&
+                    qqMusicRepository.requiresCompatibilityStorageWarning)
         }
         if (sections.youTubeAuth) {
             if (!youTubeRepository.isAuthStoragePersistent) {
@@ -334,6 +354,7 @@ class ConfigFileManager(
     ): Int = listOf(
         sections.neteaseAuth && restoreNeteaseAuth(payload.neteaseAuth, warnings),
         sections.biliAuth && restoreBiliAuth(payload.biliAuth),
+        sections.qqMusicAuth && restoreQQMusicAuth(payload.qqMusicAuth),
         sections.youTubeAuth && restoreYouTubeAuth(payload.youTubeAuth, allowCompatibilityStorage)
     ).count { it }
 
@@ -358,6 +379,18 @@ class ConfigFileManager(
             return false
         }
         biliRepository.saveCookies(cookies = snapshot.cookies, savedAt = importedSavedAt(snapshot.savedAt))
+        return true
+    }
+
+    private fun restoreQQMusicAuth(snapshot: SavedCookieConfigSnapshot): Boolean {
+        if (!snapshot.hasData()) {
+            qqMusicRepository.clear()
+            return false
+        }
+        qqMusicRepository.saveCookies(
+            cookies = snapshot.cookies,
+            savedAt = importedSavedAt(snapshot.savedAt)
+        )
         return true
     }
 

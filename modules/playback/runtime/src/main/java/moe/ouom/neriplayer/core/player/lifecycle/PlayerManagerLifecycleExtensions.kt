@@ -418,10 +418,13 @@ private fun PlayerManager.applyInitialPlaybackPreferences(
     preferredQuality = initialPlaybackPreferences.audioQuality
     youtubePreferredQuality = initialPlaybackPreferences.youtubeAudioQuality
     biliPreferredQuality = initialPlaybackPreferences.biliAudioQuality
+    qqMusicPreferredQuality = initialPlaybackPreferences.qqMusicAudioQuality
     mobileDataFollowDefaultAudioQuality =
         initialPlaybackPreferences.mobileDataFollowDefaultAudioQuality
     mobileDataNeteaseAudioQuality =
         initialPlaybackPreferences.mobileDataNeteaseAudioQuality
+    mobileDataQqMusicAudioQuality =
+        initialPlaybackPreferences.mobileDataQqMusicAudioQuality
     mobileDataYouTubeAudioQuality =
         initialPlaybackPreferences.mobileDataYouTubeAudioQuality
     mobileDataBiliAudioQuality =
@@ -436,6 +439,8 @@ private fun PlayerManager.applyInitialPlaybackPreferences(
         initialPlaybackPreferences.neteaseAutoSourceSwitch
     neteaseLocalSourceFallbackEnabled =
         initialPlaybackPreferences.neteaseLocalSourceFallback
+    qqMusicAutoSourceSwitchEnabled =
+        initialPlaybackPreferences.qqMusicAutoSourceSwitch
     playbackFadeInEnabled = initialPlaybackPreferences.playbackFadeIn
     playbackCrossfadeNextEnabled =
         initialPlaybackPreferences.playbackCrossfadeNext
@@ -483,7 +488,7 @@ private fun PlayerManager.applyInitialPlaybackPreferences(
     audioEffectsOwner.restore(initialPlaybackPreferences.toAudioEffectsSettings())
     NPLogger.d(
         "NERI-PlayerManager",
-        "initialize(): prefs quality=$preferredQuality, youtubeQuality=$youtubePreferredQuality, biliQuality=$biliPreferredQuality, mobileDataFollowDefault=$mobileDataFollowDefaultAudioQuality, mobileDataQuality=$mobileDataNeteaseAudioQuality/$mobileDataYouTubeAudioQuality/$mobileDataBiliAudioQuality, keepProgress=$keepLastPlaybackProgressEnabled, rememberLongFormProgress=$rememberLongFormPlaybackProgressEnabled, keepMode=$keepPlaybackModeStateEnabled, neteaseAutoSourceSwitch=$neteaseAutoSourceSwitchEnabled, neteaseLocalSourceFallback=$neteaseLocalSourceFallbackEnabled, fadeIn=$playbackFadeInEnabled/${playbackFadeInDurationMs}ms, crossfade=$playbackCrossfadeNextEnabled/${playbackCrossfadeInDurationMs}ms, highResolutionOutput=$playbackHighResolutionOutputEnabled, stopOnBluetoothDisconnect=$stopOnBluetoothDisconnectEnabled, usbExclusivePlayback=$usbExclusivePlaybackEnabled, allowMixedPlayback=$allowMixedPlaybackEnabled"
+        "initialize(): prefs quality=$preferredQuality, qqMusicQuality=$qqMusicPreferredQuality, youtubeQuality=$youtubePreferredQuality, biliQuality=$biliPreferredQuality, mobileDataFollowDefault=$mobileDataFollowDefaultAudioQuality, mobileDataQuality=$mobileDataNeteaseAudioQuality/$mobileDataQqMusicAudioQuality/$mobileDataYouTubeAudioQuality/$mobileDataBiliAudioQuality, keepProgress=$keepLastPlaybackProgressEnabled, rememberLongFormProgress=$rememberLongFormPlaybackProgressEnabled, keepMode=$keepPlaybackModeStateEnabled, neteaseAutoSourceSwitch=$neteaseAutoSourceSwitchEnabled, neteaseLocalSourceFallback=$neteaseLocalSourceFallbackEnabled, qqMusicAutoSourceSwitch=$qqMusicAutoSourceSwitchEnabled, fadeIn=$playbackFadeInEnabled/${playbackFadeInDurationMs}ms, crossfade=$playbackCrossfadeNextEnabled/${playbackCrossfadeInDurationMs}ms, highResolutionOutput=$playbackHighResolutionOutputEnabled, stopOnBluetoothDisconnect=$stopOnBluetoothDisconnectEnabled, usbExclusivePlayback=$usbExclusivePlaybackEnabled, allowMixedPlayback=$allowMixedPlaybackEnabled"
     )
 }
 
@@ -1159,6 +1164,18 @@ private fun PlayerManager.observePlaybackSettings() {
         }
     }
     ioScope.launch {
+        settingsRepo.qqMusicAudioQualityFlow.collect { q ->
+            val previousQuality = qqMusicPreferredQuality
+            qqMusicPreferredQuality = q
+            if (previousQuality != q) {
+                scheduleQualityRefresh(
+                    source = PlaybackAudioSource.QQ_MUSIC,
+                    reason = "qq_music_quality_changed"
+                )
+            }
+        }
+    }
+    ioScope.launch {
         settingsRepo.mobileDataFollowDefaultAudioQualityFlow.collect { enabled ->
             val previousValue = mobileDataFollowDefaultAudioQuality
             mobileDataFollowDefaultAudioQuality = enabled
@@ -1173,6 +1190,10 @@ private fun PlayerManager.observePlaybackSettings() {
                 )
                 scheduleQualityRefresh(
                     source = PlaybackAudioSource.BILIBILI,
+                    reason = "mobile_data_follow_default_quality_changed"
+                )
+                scheduleQualityRefresh(
+                    source = PlaybackAudioSource.QQ_MUSIC,
                     reason = "mobile_data_follow_default_quality_changed"
                 )
             }
@@ -1198,6 +1219,18 @@ private fun PlayerManager.observePlaybackSettings() {
                 scheduleQualityRefresh(
                     source = PlaybackAudioSource.YOUTUBE_MUSIC,
                     reason = "mobile_data_youtube_quality_changed"
+                )
+            }
+        }
+    }
+    ioScope.launch {
+        settingsRepo.mobileDataQqMusicAudioQualityFlow.collect { q ->
+            val previousQuality = mobileDataQqMusicAudioQuality
+            mobileDataQqMusicAudioQuality = q
+            if (previousQuality != q) {
+                scheduleQualityRefresh(
+                    source = PlaybackAudioSource.QQ_MUSIC,
+                    reason = "mobile_data_qq_music_quality_changed"
                 )
             }
         }
@@ -1473,6 +1506,18 @@ private fun PlayerManager.observePlaybackSettings() {
                 scheduleQualityRefresh(
                     source = PlaybackAudioSource.NETEASE,
                     reason = "netease_local_source_fallback_enabled"
+                )
+            }
+        }
+    }
+    ioScope.launch {
+        settingsRepo.qqMusicAutoSourceSwitchFlow.collect { enabled ->
+            val previousEnabled = qqMusicAutoSourceSwitchEnabled
+            qqMusicAutoSourceSwitchEnabled = enabled
+            if (!previousEnabled && enabled) {
+                scheduleQualityRefresh(
+                    source = PlaybackAudioSource.QQ_MUSIC,
+                    reason = "qq_music_auto_source_switch_enabled"
                 )
             }
         }

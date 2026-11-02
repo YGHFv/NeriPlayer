@@ -28,6 +28,7 @@ class PlaybackMediaItemFactoryTest {
         val qualityReads = mutableListOf<String>()
         val youtube = song(channelId = ListenTogetherChannels.YOUTUBE_MUSIC, audioId = "video")
         val bili = song(channelId = ListenTogetherChannels.BILIBILI, audioId = "aid", subAudioId = "cid")
+        val qqMusic = song(channelId = ListenTogetherChannels.QQ_MUSIC, audioId = "mid")
         val netease = song(id = 321L)
         val local = song(localFilePath = "/storage/emulated/0/song.flac")
 
@@ -38,10 +39,12 @@ class PlaybackMediaItemFactoryTest {
         assertTrue(qualityReads.isEmpty())
         assertEquals("bili-aid-cid-lossless", key(bili, qualityReads))
         assertEquals(listOf("bili"), qualityReads)
+        assertEquals("qqmusic-mid-exhigh", key(qqMusic, qualityReads))
+        assertEquals(listOf("bili", "qqMusic"), qualityReads)
         assertEquals("netease-321-exhigh-fallback-v1", key(netease, qualityReads))
-        assertEquals(listOf("bili", "netease"), qualityReads)
+        assertEquals(listOf("bili", "qqMusic", "netease"), qualityReads)
         assertTrue(key(local, qualityReads).startsWith("local-"))
-        assertEquals(listOf("bili", "netease"), qualityReads)
+        assertEquals(listOf("bili", "qqMusic", "netease"), qualityReads)
     }
 
     @Test
@@ -161,7 +164,8 @@ class PlaybackMediaItemFactoryTest {
         neteaseFallbackEnabled = { true },
         youtubeQuality = { qualityReads += "youtube"; "very_high" },
         biliQuality = { qualityReads += "bili"; "lossless" },
-        neteaseQuality = { qualityReads += "netease"; "exhigh" }
+        neteaseQuality = { qualityReads += "netease"; "exhigh" },
+        qqMusicQuality = { qualityReads += "qqMusic"; "exhigh" }
     )
 
     private fun song(

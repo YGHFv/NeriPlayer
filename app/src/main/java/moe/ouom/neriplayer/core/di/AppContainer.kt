@@ -73,6 +73,9 @@ import moe.ouom.neriplayer.data.listentogether.ListenTogetherPreferences
 import moe.ouom.neriplayer.data.local.playlist.LocalPlaylistRepository
 import moe.ouom.neriplayer.platform.bilibili.auth.BiliCookieRepository
 import moe.ouom.neriplayer.platform.netease.auth.NeteaseCookieRepository
+import moe.ouom.neriplayer.platform.qqmusic.api.profile.QQMusicAccountProfileClient
+import moe.ouom.neriplayer.platform.qqmusic.api.client.QQMusicClient
+import moe.ouom.neriplayer.platform.qqmusic.auth.QQMusicAuthRepository
 import moe.ouom.neriplayer.network.weblogin.ForegroundWebLoginGuard
 import moe.ouom.neriplayer.platform.youtube.auth.YouTubeAuthAutoRefreshManager
 import moe.ouom.neriplayer.platform.youtube.auth.YouTubeAuthRepository
@@ -273,6 +276,7 @@ object AppContainer {
     val neteaseCookieRepo by lazy { NeteaseCookieRepository(application) }
     val biliCookieRepo by lazy { BiliCookieRepository(application) }
     val youtubeAuthRepo by lazy { YouTubeAuthRepository(application) }
+    val qqMusicAuthRepo by lazy { QQMusicAuthRepository(application) }
     internal val youtubeAuthAutoRefreshManager by lazy {
         YouTubeAuthAutoRefreshManager(
             httpClientProvider = { sharedOkHttpClient },
@@ -492,9 +496,22 @@ object AppContainer {
     }
     val qqMusicSearchApi by lazy {
         QQMusicLyricsRepository(
-            api = QQMusicSearchApi(sharedOkHttpClient, debugLogging = BuildConfig.DEBUG),
+            api = QQMusicSearchApi(
+                client = sharedOkHttpClient,
+                debugLogging = BuildConfig.DEBUG,
+                authProvider = qqMusicAuthRepo::getAuthOnce
+            ),
             amllTtmlClient = amllTtmlClient,
             amllLyricsEnabledProvider = { settingsRepo.amllLyricsEnabledFlow.first() }
+        )
+    }
+    val qqMusicAccountProfileClient by lazy {
+        QQMusicAccountProfileClient(sharedOkHttpClient)
+    }
+    val qqMusicClient by lazy {
+        QQMusicClient(
+            client = sharedOkHttpClient,
+            authProvider = qqMusicAuthRepo::getAuthOnce
         )
     }
     val searchManager by lazy {

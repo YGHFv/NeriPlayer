@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import moe.ouom.neriplayer.common.R as CoreCommonR
 import moe.ouom.neriplayer.core.di.AppContainer
+import moe.ouom.neriplayer.data.model.qqmusic.auth.QQMusicAuthBundle
 import moe.ouom.neriplayer.data.model.youtube.auth.YouTubeAuthBundle
 import moe.ouom.neriplayer.platform.youtube.config.YouTubeFeatureGate
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsAccountAuthorizationSnapshot
@@ -36,15 +37,18 @@ import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsAccountProfile
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsAccountProfileRequest
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsAccountProfileState
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsYouTubeAccountAuthorizationSnapshot
+import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsQQMusicAccountAuthorizationSnapshot
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.hasValidSavedCookieHealth
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.hasValidYouTubeAuthHealth
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.loadBiliAccountProfile
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.loadNeteaseAccountProfile
+import moe.ouom.neriplayer.ui.screen.tab.settings.auth.loadQQMusicAccountProfile
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.loadYouTubeAccountProfile
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.rememberSettingsAccountProfile
 import moe.ouom.neriplayer.ui.screen.tab.settings.component.InlineMessage
 import moe.ouom.neriplayer.ui.screen.tab.settings.state.formatSyncTime
 import moe.ouom.neriplayer.ui.viewmodel.auth.BiliAuthUiState
+import moe.ouom.neriplayer.ui.viewmodel.auth.QQMusicAuthUiState
 import moe.ouom.neriplayer.ui.viewmodel.auth.YouTubeAuthUiState
 import moe.ouom.neriplayer.ui.viewmodel.debug.NeteaseAuthUiState
 import moe.ouom.neriplayer.R as AppR
@@ -54,6 +58,7 @@ internal fun StartupPlatformAccounts(
     biliState: BiliAuthUiState,
     neteaseState: NeteaseAuthUiState,
     youTubeState: YouTubeAuthUiState,
+    qqMusicState: QQMusicAuthUiState,
     isActive: Boolean,
     inlineMessage: String?,
     onInlineMessageChange: (String?) -> Unit,
@@ -76,11 +81,18 @@ internal fun StartupPlatformAccounts(
             .map { SettingsYouTubeAccountAuthorizationSnapshot(it) }
             .distinctUntilChanged().flowOn(Dispatchers.IO)
     }
+    val qqMusicAuthorizationFlow = remember {
+        flow { emitAll(AppContainer.qqMusicAuthRepo.authFlow) }
+            .map { SettingsQQMusicAccountAuthorizationSnapshot(it) }
+            .distinctUntilChanged().flowOn(Dispatchers.IO)
+    }
     val emptyAuthorization = remember { SettingsAccountAuthorizationSnapshot(emptyMap()) }
     val emptyYouTubeAuthorization = remember { SettingsYouTubeAccountAuthorizationSnapshot(YouTubeAuthBundle()) }
+    val emptyQQMusicAuthorization = remember { SettingsQQMusicAccountAuthorizationSnapshot(QQMusicAuthBundle()) }
     val biliAuthorization by biliAuthorizationFlow.collectAsStateWithLifecycle(initialValue = emptyAuthorization)
     val neteaseAuthorization by neteaseAuthorizationFlow.collectAsStateWithLifecycle(initialValue = emptyAuthorization)
     val youtubeAuthorization by youtubeAuthorizationFlow.collectAsStateWithLifecycle(initialValue = emptyYouTubeAuthorization)
+    val qqMusicAuthorization by qqMusicAuthorizationFlow.collectAsStateWithLifecycle(initialValue = emptyQQMusicAuthorization)
     val youtubeEnabled by AppContainer.settingsRepo.youtubeEnabledFlow.collectAsStateWithLifecycle(
         initialValue = YouTubeFeatureGate.isEnabled()
     )
@@ -94,6 +106,11 @@ internal fun StartupPlatformAccounts(
         youtubeRequest = SettingsAccountProfileRequest(
             youTubeState.hasSavedAuth, youtubeAuthorization.savedAt, youtubeAuthorization.identity
         ),
+        qqMusicRequest = SettingsAccountProfileRequest(
+            qqMusicState.hasSavedCookies,
+            qqMusicAuthorization.savedAt,
+            qqMusicAuthorization.identity
+        ),
         isActive = isActive,
         youtubeEnabled = youtubeEnabled
     ) { platform ->
@@ -101,7 +118,7 @@ internal fun StartupPlatformAccounts(
             SettingsAccountPlatform.Netease -> loadNeteaseAccountProfile(neteaseAuthorization)
             SettingsAccountPlatform.Bilibili -> loadBiliAccountProfile(biliAuthorization)
             SettingsAccountPlatform.YouTube -> loadYouTubeAccountProfile(youtubeAuthorization)
-            SettingsAccountPlatform.QqMusic -> null
+            SettingsAccountPlatform.QqMusic -> loadQQMusicAccountProfile(qqMusicAuthorization)
         }
     }
     StartupPlatformAccountsContent(
@@ -129,6 +146,14 @@ internal fun StartupPlatformAccounts(
                 savedAtLabel = startupAccountSavedAtText(youTubeState.health.savedAt),
                 profile = profiles.youtube.profile,
                 profileLoading = profiles.youtube.loading
+            ),
+            SettingsAccountCardUiState(
+                platform = SettingsAccountPlatform.QqMusic,
+                hasSavedAuthorization = qqMusicState.hasSavedCookies,
+                authorizationComplete = hasValidSavedCookieHealth(qqMusicState.health.state),
+                savedAtLabel = startupAccountSavedAtText(qqMusicState.health.savedAt),
+                profile = profiles.qqMusic.profile,
+                profileLoading = profiles.qqMusic.loading
             )
         ),
         inlineMessage = inlineMessage,
@@ -141,7 +166,8 @@ internal fun StartupPlatformAccounts(
 internal data class StartupAccountProfiles(
     val netease: SettingsAccountProfileState,
     val bili: SettingsAccountProfileState,
-    val youtube: SettingsAccountProfileState
+    val youtube: SettingsAccountProfileState,
+    val qqMusic: SettingsAccountProfileState
 )
 
 @Composable
@@ -149,6 +175,7 @@ internal fun rememberStartupAccountProfiles(
     neteaseRequest: SettingsAccountProfileRequest,
     biliRequest: SettingsAccountProfileRequest,
     youtubeRequest: SettingsAccountProfileRequest,
+    qqMusicRequest: SettingsAccountProfileRequest = SettingsAccountProfileRequest(false, 0L),
     isActive: Boolean,
     youtubeEnabled: Boolean,
     loadProfile: suspend (SettingsAccountPlatform) -> SettingsAccountProfile?
@@ -164,6 +191,9 @@ internal fun rememberStartupAccountProfiles(
         },
         youtube = rememberSettingsAccountProfile(youtubeRequest, active && youtubeEnabled) {
             loadProfile(SettingsAccountPlatform.YouTube)
+        },
+        qqMusic = rememberSettingsAccountProfile(qqMusicRequest, active) {
+            loadProfile(SettingsAccountPlatform.QqMusic)
         }
     )
 }

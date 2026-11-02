@@ -14,7 +14,8 @@ class WebViewLoginStateClearReceiverFilterTest {
     private val receivers = listOf(
         NeteaseWebViewLoginStateClearReceiver(),
         BiliWebViewLoginStateClearReceiver(),
-        YouTubeWebViewLoginStateClearReceiver()
+        YouTubeWebViewLoginStateClearReceiver(),
+        QQMusicWebViewLoginStateClearReceiver()
     )
 
     @Test

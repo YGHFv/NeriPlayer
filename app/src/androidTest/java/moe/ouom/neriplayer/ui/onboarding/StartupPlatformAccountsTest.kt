@@ -32,9 +32,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.captureToImage
@@ -104,13 +101,15 @@ class StartupPlatformAccountsTest {
             composeRule.onNodeWithTag("settingsAccountCard:netease").performScrollTo().performClick()
             composeRule.onNodeWithTag("settingsAccountLogin:netease").performScrollTo().performClick()
             composeRule.onNodeWithTag("settingsAccountLogout:bilibili").performScrollTo().performClick()
-            composeRule.onNodeWithTag("settingsAccountCard:qq", true).performScrollTo()
-                .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
-            composeRule.onNodeWithTag("settingsAccountLogin:qq").assertDoesNotExist()
+            composeRule.onNodeWithTag("settingsAccountLogin:qq", true)
+                .performScrollTo().performClick()
             composeRule.onNodeWithTag("settingsAccountLogout:qq").assertDoesNotExist()
             composeRule.onNodeWithTag(NEXT).assertIsDisplayed()
             composeRule.runOnIdle {
-                assertEquals(listOf(SettingsAccountPlatform.Netease), loginCalls)
+                assertEquals(
+                    listOf(SettingsAccountPlatform.Netease, SettingsAccountPlatform.QqMusic),
+                    loginCalls
+                )
                 assertEquals(listOf(SettingsAccountPlatform.Netease, SettingsAccountPlatform.Bilibili), manageCalls)
                 assertEquals(0, continueCalls)
             }

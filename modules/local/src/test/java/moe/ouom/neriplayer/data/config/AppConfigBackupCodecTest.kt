@@ -181,6 +181,7 @@ class AppConfigBackupCodecTest {
             { it.copy(language = true) },
             { it.copy(neteaseAuth = true) },
             { it.copy(biliAuth = true) },
+            { it.copy(qqMusicAuth = true) },
             { it.copy(youTubeAuth = true) },
             { it.copy(gitHubSync = true) },
             { it.copy(webDavSync = true) },
@@ -188,8 +189,8 @@ class AppConfigBackupCodecTest {
         ).map { it(none) }
 
         assertFalse(none.hasAnySection())
-        assertEquals(List(9) { true }, single.map { it.hasAnySection() })
-        assertEquals(List(6) { false } + List(3) { true }, single.map { it.hasSyncSection })
+        assertEquals(List(10) { true }, single.map { it.hasAnySection() })
+        assertEquals(List(7) { false } + List(3) { true }, single.map { it.hasSyncSection })
     }
 
     @Test

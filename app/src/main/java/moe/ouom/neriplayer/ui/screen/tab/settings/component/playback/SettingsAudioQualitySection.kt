@@ -90,6 +90,9 @@ internal fun SettingsAudioQualitySection(
     qualityLabel: String,
     preferredQuality: String,
     onQualityChange: (String) -> Unit,
+    qqMusicQualityLabel: String,
+    qqMusicPreferredQuality: String,
+    onQqMusicQualityChange: (String) -> Unit,
     youtubeQualityLabel: String,
     youtubePreferredQuality: String,
     onYouTubeQualityChange: (String) -> Unit,
@@ -101,6 +104,9 @@ internal fun SettingsAudioQualitySection(
     mobileDataNeteaseQualityLabel: String,
     mobileDataNeteaseAudioQuality: String,
     onMobileDataNeteaseAudioQualityChange: (String) -> Unit,
+    mobileDataQqMusicQualityLabel: String,
+    mobileDataQqMusicAudioQuality: String,
+    onMobileDataQqMusicAudioQualityChange: (String) -> Unit,
     mobileDataYouTubeQualityLabel: String,
     mobileDataYouTubeAudioQuality: String,
     onMobileDataYouTubeAudioQualityChange: (String) -> Unit,
@@ -109,12 +115,16 @@ internal fun SettingsAudioQualitySection(
     onMobileDataBiliAudioQualityChange: (String) -> Unit,
     showQualityDialog: Boolean,
     onShowQualityDialogChange: (Boolean) -> Unit,
+    showQqMusicQualityDialog: Boolean,
+    onShowQqMusicQualityDialogChange: (Boolean) -> Unit,
     showYouTubeQualityDialog: Boolean,
     onShowYouTubeQualityDialogChange: (Boolean) -> Unit,
     showBiliQualityDialog: Boolean,
     onShowBiliQualityDialogChange: (Boolean) -> Unit,
     showMobileDataNeteaseQualityDialog: Boolean,
     onShowMobileDataNeteaseQualityDialogChange: (Boolean) -> Unit,
+    showMobileDataQqMusicQualityDialog: Boolean,
+    onShowMobileDataQqMusicQualityDialogChange: (Boolean) -> Unit,
     showMobileDataYouTubeQualityDialog: Boolean,
     onShowMobileDataYouTubeQualityDialogChange: (Boolean) -> Unit,
     showMobileDataBiliQualityDialog: Boolean,
@@ -169,6 +179,19 @@ internal fun SettingsAudioQualitySection(
                 preferredQuality = youtubePreferredQuality,
                 iconRes = CoreCommonR.drawable.ic_youtube,
                 onClick = { onShowYouTubeQualityDialogChange(true) },
+                highlightTargetId = highlightTargetId,
+                highlightPulse = highlightPulse,
+                onHighlightFinished = onHighlightFinished
+            )
+
+            AudioQualityListItem(
+                setting = AutoSettingsMetadata.requireSetting(
+                    AutoSettingsKeys.QQ_MUSIC_AUDIO_QUALITY
+                ),
+                valueLabel = qqMusicQualityLabel,
+                preferredQuality = qqMusicPreferredQuality,
+                iconRes = AppR.drawable.ic_qq_music,
+                onClick = { onShowQqMusicQualityDialogChange(true) },
                 highlightTargetId = highlightTargetId,
                 highlightPulse = highlightPulse,
                 onHighlightFinished = onHighlightFinished
@@ -231,6 +254,19 @@ internal fun SettingsAudioQualitySection(
                     preferredQuality = mobileDataNeteaseAudioQuality,
                     iconRes = CoreCommonR.drawable.ic_netease_cloud_music,
                     onClick = { onShowMobileDataNeteaseQualityDialogChange(true) },
+                    highlightTargetId = highlightTargetId,
+                    highlightPulse = highlightPulse,
+                    onHighlightFinished = onHighlightFinished
+                )
+
+                AudioQualityListItem(
+                    setting = AutoSettingsMetadata.requireSetting(
+                        AutoSettingsKeys.MOBILE_DATA_QQ_MUSIC_AUDIO_QUALITY
+                    ),
+                    valueLabel = mobileDataQqMusicQualityLabel,
+                    preferredQuality = mobileDataQqMusicAudioQuality,
+                    iconRes = AppR.drawable.ic_qq_music,
+                    onClick = { onShowMobileDataQqMusicQualityDialogChange(true) },
                     highlightTargetId = highlightTargetId,
                     highlightPulse = highlightPulse,
                     onHighlightFinished = onHighlightFinished
@@ -308,6 +344,23 @@ internal fun SettingsAudioQualitySection(
         )
     }
 
+    if (showQqMusicQualityDialog) {
+        QualityOptionsDialog(
+            title = stringResource(CoreCommonR.string.quality_qq_music_default),
+            selectedValue = qqMusicPreferredQuality,
+            options = listOf(
+                "standard" to stringResource(CoreCommonR.string.quality_standard),
+                "exhigh" to stringResource(CoreCommonR.string.quality_very_high),
+                "lossless" to stringResource(CoreCommonR.string.quality_lossless)
+            ),
+            onDismiss = { onShowQqMusicQualityDialogChange(false) },
+            onSelect = { level ->
+                onQqMusicQualityChange(level)
+                onShowQqMusicQualityDialogChange(false)
+            }
+        )
+    }
+
     if (showBiliQualityDialog) {
         QualityOptionsDialog(
             title = stringResource(CoreCommonR.string.quality_bili_default),
@@ -370,6 +423,23 @@ internal fun SettingsAudioQualitySection(
             onSelect = { level ->
                 onMobileDataYouTubeAudioQualityChange(level)
                 onShowMobileDataYouTubeQualityDialogChange(false)
+            }
+        )
+    }
+
+    if (showMobileDataQqMusicQualityDialog) {
+        QualityOptionsDialog(
+            title = stringResource(CoreCommonR.string.settings_mobile_data_qq_music_audio_quality),
+            selectedValue = mobileDataQqMusicAudioQuality,
+            options = listOf(
+                "standard" to stringResource(CoreCommonR.string.quality_standard),
+                "exhigh" to stringResource(CoreCommonR.string.quality_very_high),
+                "lossless" to stringResource(CoreCommonR.string.quality_lossless)
+            ),
+            onDismiss = { onShowMobileDataQqMusicQualityDialogChange(false) },
+            onSelect = { level ->
+                onMobileDataQqMusicAudioQualityChange(level)
+                onShowMobileDataQqMusicQualityDialogChange(false)
             }
         )
     }

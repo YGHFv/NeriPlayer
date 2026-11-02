@@ -113,6 +113,7 @@ import moe.ouom.neriplayer.ui.screen.tab.settings.auth.LoginSuccessDialog
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsAccountPlatform
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsBiliAuthDialogs
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsNeteaseAuthDialogs
+import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsQQMusicAuthDialogs
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsYouTubeAuthDialogs
 import moe.ouom.neriplayer.ui.screen.tab.settings.component.ThemeModeActionButton
 import moe.ouom.neriplayer.ui.screen.tab.settings.dialog.SettingsGitHubDialogs
@@ -123,6 +124,8 @@ import moe.ouom.neriplayer.ui.viewmodel.GitHubSyncViewModel
 import moe.ouom.neriplayer.ui.viewmodel.WebDavSyncViewModel
 import moe.ouom.neriplayer.ui.viewmodel.auth.BiliAuthEvent
 import moe.ouom.neriplayer.ui.viewmodel.auth.BiliAuthViewModel
+import moe.ouom.neriplayer.ui.viewmodel.auth.QQMusicAuthEvent
+import moe.ouom.neriplayer.ui.viewmodel.auth.QQMusicAuthViewModel
 import moe.ouom.neriplayer.ui.viewmodel.auth.YouTubeAuthEvent
 import moe.ouom.neriplayer.ui.viewmodel.auth.YouTubeAuthViewModel
 import moe.ouom.neriplayer.ui.viewmodel.debug.NeteaseAuthEvent
@@ -195,10 +198,12 @@ internal fun shouldShowStartupNotificationPermissionWarning(
 internal fun shouldWarnStartupNoPlatformConnected(
     biliState: SavedCookieAuthState,
     neteaseState: SavedCookieAuthState,
-    youTubeState: YouTubeAuthState
+    youTubeState: YouTubeAuthState,
+    qqMusicState: SavedCookieAuthState = SavedCookieAuthState.Missing
 ): Boolean = biliState == SavedCookieAuthState.Missing &&
     neteaseState == SavedCookieAuthState.Missing &&
-    youTubeState == YouTubeAuthState.Missing
+    youTubeState == YouTubeAuthState.Missing &&
+    qqMusicState == SavedCookieAuthState.Missing
 
 internal fun hasFinishedStartupNotificationPermissionWarning(
     attempts: Int
@@ -384,6 +389,9 @@ fun StartupOnboardingScreen(
     var showYouTubeSheet by remember { mutableStateOf(false) }
     var showYouTubeSavedCookieDialog by remember { mutableStateOf(false) }
     var youTubeSheetTab by rememberSaveable { mutableIntStateOf(0) }
+    var showQQMusicSheet by remember { mutableStateOf(false) }
+    var showQQMusicSavedCookieDialog by remember { mutableStateOf(false) }
+    var qqMusicSheetTab by rememberSaveable { mutableIntStateOf(0) }
     var showGitHubConfigDialog by remember { mutableStateOf(false) }
     var showClearGitHubConfigDialog by remember { mutableStateOf(false) }
     var showWebDavConfigDialog by remember { mutableStateOf(false) }
@@ -405,6 +413,8 @@ fun StartupOnboardingScreen(
     val biliState by biliVm.uiState.collectAsStateWithLifecycle()
     val youTubeVm: YouTubeAuthViewModel = viewModel()
     val youTubeState by youTubeVm.uiState.collectAsStateWithLifecycle()
+    val qqMusicVm: QQMusicAuthViewModel = viewModel()
+    val qqMusicState by qqMusicVm.uiState.collectAsStateWithLifecycle()
     val githubVm: GitHubSyncViewModel = viewModel()
     val githubState by githubVm.uiState.collectAsStateWithLifecycle()
     val webDavVm: WebDavSyncViewModel = viewModel()
@@ -557,6 +567,21 @@ fun StartupOnboardingScreen(
         }
     }
 
+    LaunchedEffect(qqMusicVm) {
+        qqMusicVm.events.collect { event ->
+            when (event) {
+                is QQMusicAuthEvent.ShowSnack -> inlineMessage = event.message
+                QQMusicAuthEvent.LoginSuccess -> {
+                    showQQMusicSavedCookieDialog = false
+                    inlineMessage = null
+                    showQQMusicSheet = false
+                    loginSuccessTitle = CoreCommonR.string.settings_qq_music_login_success
+                    qqMusicVm.refreshAuthHealth()
+                }
+            }
+        }
+    }
+
     val baseDensity = LocalDensity.current
     val previewDensity = remember(
         baseDensity.fontScale,
@@ -652,7 +677,8 @@ fun StartupOnboardingScreen(
             shouldWarnStartupNoPlatformConnected(
                 biliState = biliState.health.state,
                 neteaseState = neteaseState.health.state,
-                youTubeState = youTubeState.health.state
+                youTubeState = youTubeState.health.state,
+                qqMusicState = qqMusicState.health.state
             )
         ) {
             noPlatformWarningVisible = true
@@ -789,6 +815,7 @@ fun StartupOnboardingScreen(
                     biliState = biliState,
                     neteaseState = neteaseState,
                     youTubeState = youTubeState,
+                    qqMusicState = qqMusicState,
                     isActive = stepIndex == currentStep && !stepTransitionState.isRunning && !finishing,
                     onLogin = { platform ->
                         inlineMessage = null
@@ -805,7 +832,10 @@ fun StartupOnboardingScreen(
                                 youTubeSheetTab = 0
                                 showYouTubeSheet = true
                             }
-                            SettingsAccountPlatform.QqMusic -> Unit
+                            SettingsAccountPlatform.QqMusic -> {
+                                qqMusicSheetTab = 0
+                                showQQMusicSheet = true
+                            }
                         }
                     },
                     onManageSaved = { platform ->
@@ -814,7 +844,7 @@ fun StartupOnboardingScreen(
                             SettingsAccountPlatform.Bilibili -> showBiliSavedCookieDialog = true
                             SettingsAccountPlatform.Netease -> showNeteaseSavedCookieDialog = true
                             SettingsAccountPlatform.YouTube -> showYouTubeSavedCookieDialog = true
-                            SettingsAccountPlatform.QqMusic -> Unit
+                            SettingsAccountPlatform.QqMusic -> showQQMusicSavedCookieDialog = true
                         }
                     }
                 )
@@ -1200,6 +1230,25 @@ fun StartupOnboardingScreen(
                 onLogout = {
                     showYouTubeSavedCookieDialog = false
                     youTubeVm.clearAuth()
+                }
+            )
+            SettingsQQMusicAuthDialogs(
+                showSheet = showQQMusicSheet,
+                initialTab = qqMusicSheetTab,
+                onDismissSheet = { showQQMusicSheet = false },
+                inlineMsg = inlineMessage,
+                onInlineMsgChange = { inlineMessage = it },
+                vm = qqMusicVm,
+                showSavedCookieDialog = showQQMusicSavedCookieDialog,
+                onDismissSavedCookieDialog = { showQQMusicSavedCookieDialog = false },
+                onOpenSheetAtTab = { tab ->
+                    inlineMessage = null
+                    qqMusicSheetTab = tab
+                    showQQMusicSheet = true
+                },
+                onLogout = {
+                    showQQMusicSavedCookieDialog = false
+                    qqMusicVm.clearCookies()
                 }
             )
             if (syncUpgradeState.startupRegistrationComplete) {

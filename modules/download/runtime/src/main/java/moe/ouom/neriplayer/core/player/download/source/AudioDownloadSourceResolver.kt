@@ -11,6 +11,7 @@ import moe.ouom.neriplayer.platform.bilibili.playback.resolver.resolveBiliSong
 import moe.ouom.neriplayer.data.model.youtube.playback.YouTubePlayableAudio
 import moe.ouom.neriplayer.data.model.youtube.playback.YouTubePlayableStreamType
 import moe.ouom.neriplayer.common.logging.NPLogger
+import moe.ouom.neriplayer.data.model.ltw.track.ListenTogetherChannels
 import moe.ouom.neriplayer.platform.netease.api.playback.parser.NeteasePlaybackResponseParser
 import moe.ouom.neriplayer.data.model.SongItem
 import moe.ouom.neriplayer.platform.subsonic.api.SubsonicException
@@ -44,6 +45,9 @@ internal object AudioDownloadSourceResolver {
     private const val TAG = "NERI-Downloader"
 
     internal fun isBiliSource(song: SongItem): Boolean = song.identity().album == "bilibili"
+
+    internal fun isQQMusicSource(song: SongItem): Boolean =
+        song.channelId == ListenTogetherChannels.QQ_MUSIC
 
     internal suspend fun resolveServer(song: SongItem): AudioDownloadManager.ResolvedDownloadSource {
         val repository = DownloadHosts.sources.subsonicRepository ?: throw SubsonicException.accountUnavailable()
@@ -349,6 +353,31 @@ internal object AudioDownloadSourceResolver {
             mimeType = chosen.mimeType,
             fileExtensionHint = mimeToExt(chosen.mimeType),
             durationMs = resolved.pageInfo?.durationSec?.takeIf { it > 0 }?.times(1_000L)
+        )
+    }
+
+    internal suspend fun resolveQQMusic(
+        song: SongItem,
+        preferredQuality: String
+    ): AudioDownloadManager.ResolvedDownloadSource? {
+        if (!isQQMusicSource(song)) return null
+        val songMid = song.audioId?.trim()?.takeIf(String::isNotBlank) ?: return null
+        val stream = DownloadHosts.sources.qqMusicClient.getPlaybackStream(
+            songMid = songMid,
+            mediaMid = song.subAudioId,
+            preferredQuality = preferredQuality,
+            // The transfer engine probes each candidate with download-specific headers.
+            probeCandidates = false,
+            // Never save an official 30-second preview as if it were a full track.
+            allowPreview = false
+        )
+        return AudioDownloadManager.ResolvedDownloadSource(
+            url = stream.url,
+            candidateUrls = stream.candidateUrls.filterNot { it == stream.url }.distinct(),
+            mimeType = stream.mimeType,
+            fileExtensionHint = stream.fileExtensionHint,
+            contentLength = stream.contentLength,
+            durationMs = song.durationMs.takeIf { it > 0L }
         )
     }
 

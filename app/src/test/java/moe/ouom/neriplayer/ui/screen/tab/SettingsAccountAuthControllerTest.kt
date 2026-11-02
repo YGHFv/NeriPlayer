@@ -9,6 +9,8 @@ import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsAuthDialogState
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsAccountPlatform
 import moe.ouom.neriplayer.ui.viewmodel.auth.BiliAuthEvent
 import moe.ouom.neriplayer.ui.viewmodel.auth.BiliAuthViewModel
+import moe.ouom.neriplayer.ui.viewmodel.auth.QQMusicAuthEvent
+import moe.ouom.neriplayer.ui.viewmodel.auth.QQMusicAuthViewModel
 import moe.ouom.neriplayer.ui.viewmodel.auth.YouTubeAuthEvent
 import moe.ouom.neriplayer.ui.viewmodel.auth.YouTubeAuthViewModel
 import moe.ouom.neriplayer.ui.viewmodel.debug.NeteaseAuthEvent
@@ -25,15 +27,17 @@ class SettingsAccountAuthControllerTest {
     private val neteaseVm = mock(NeteaseAuthViewModel::class.java)
     private val biliVm = mock(BiliAuthViewModel::class.java)
     private val youtubeVm = mock(YouTubeAuthViewModel::class.java)
+    private val qqMusicVm = mock(QQMusicAuthViewModel::class.java)
     private val dialogs = SettingsAuthDialogState(
         biliTab = mutableIntStateOf(0),
         neteaseTab = mutableIntStateOf(0),
-        youtubeTab = mutableIntStateOf(0)
+        youtubeTab = mutableIntStateOf(0),
+        qqMusicTab = mutableIntStateOf(0)
     )
     private val messages = mutableListOf<UiText?>()
     private val latestMessageAction = mutableStateOf<(UiText?) -> Unit>({ messages += it })
     private val controller = SettingsAccountAuthController(
-        neteaseVm, biliVm, youtubeVm, dialogs, latestMessageAction
+        neteaseVm, biliVm, youtubeVm, qqMusicVm, dialogs, latestMessageAction
     )
 
     @Test
@@ -41,26 +45,31 @@ class SettingsAccountAuthControllerTest {
         listOf(
             SettingsAccountPlatform.Netease,
             SettingsAccountPlatform.Bilibili,
-            SettingsAccountPlatform.YouTube
+            SettingsAccountPlatform.YouTube,
+            SettingsAccountPlatform.QqMusic
         ).forEach { platform ->
             dialogs.showNeteaseSheet = false
             dialogs.showBiliSheet = false
             dialogs.showYouTubeSheet = false
+            dialogs.showQQMusicSheet = false
             dialogs.neteaseTab.intValue = 2
             dialogs.biliTab.intValue = 3
             dialogs.youtubeTab.intValue = 4
+            dialogs.qqMusicTab.intValue = 5
 
             controller.actions.openPlatformLogin(platform)
 
             assertEquals(platform == SettingsAccountPlatform.Netease, dialogs.showNeteaseSheet)
             assertEquals(platform == SettingsAccountPlatform.Bilibili, dialogs.showBiliSheet)
             assertEquals(platform == SettingsAccountPlatform.YouTube, dialogs.showYouTubeSheet)
+            assertEquals(platform == SettingsAccountPlatform.QqMusic, dialogs.showQQMusicSheet)
             assertEquals(if (platform == SettingsAccountPlatform.Netease) 0 else 2, dialogs.neteaseTab.intValue)
             assertEquals(if (platform == SettingsAccountPlatform.Bilibili) 0 else 3, dialogs.biliTab.intValue)
             assertEquals(if (platform == SettingsAccountPlatform.YouTube) 0 else 4, dialogs.youtubeTab.intValue)
+            assertEquals(if (platform == SettingsAccountPlatform.QqMusic) 0 else 5, dialogs.qqMusicTab.intValue)
         }
-        assertEquals(listOf<UiText?>(null, null, null), messages)
-        verifyNoInteractions(neteaseVm, biliVm, youtubeVm)
+        assertEquals(listOf<UiText?>(null, null, null, null), messages)
+        verifyNoInteractions(neteaseVm, biliVm, youtubeVm, qqMusicVm)
     }
 
     @Test
@@ -68,46 +77,27 @@ class SettingsAccountAuthControllerTest {
         listOf(
             SettingsAccountPlatform.Netease,
             SettingsAccountPlatform.Bilibili,
-            SettingsAccountPlatform.YouTube
+            SettingsAccountPlatform.YouTube,
+            SettingsAccountPlatform.QqMusic
         ).forEach { platform ->
             dialogs.showNeteaseSavedCookieDialog = false
             dialogs.showBiliSavedCookieDialog = false
             dialogs.showYouTubeSavedCookieDialog = false
+            dialogs.showQQMusicSavedCookieDialog = false
 
             controller.actions.openPlatformSavedAuthorization(platform)
 
             assertEquals(platform == SettingsAccountPlatform.Netease, dialogs.showNeteaseSavedCookieDialog)
             assertEquals(platform == SettingsAccountPlatform.Bilibili, dialogs.showBiliSavedCookieDialog)
             assertEquals(platform == SettingsAccountPlatform.YouTube, dialogs.showYouTubeSavedCookieDialog)
+            assertEquals(platform == SettingsAccountPlatform.QqMusic, dialogs.showQQMusicSavedCookieDialog)
             assertFalse(dialogs.showNeteaseSheet)
             assertFalse(dialogs.showBiliSheet)
             assertFalse(dialogs.showYouTubeSheet)
+            assertFalse(dialogs.showQQMusicSheet)
         }
-        assertEquals(listOf<UiText?>(null, null, null), messages)
-        verifyNoInteractions(neteaseVm, biliVm, youtubeVm)
-    }
-
-    @Test
-    fun `unavailable qq platform does not open a dialog or clear an existing message`() {
-        messages += UiText.Literal("retained")
-        dialogs.neteaseTab.intValue = 2
-        dialogs.biliTab.intValue = 3
-        dialogs.youtubeTab.intValue = 4
-
-        controller.actions.openPlatformLogin(SettingsAccountPlatform.QqMusic)
-        controller.actions.openPlatformSavedAuthorization(SettingsAccountPlatform.QqMusic)
-
-        assertFalse(dialogs.showNeteaseSheet)
-        assertFalse(dialogs.showBiliSheet)
-        assertFalse(dialogs.showYouTubeSheet)
-        assertFalse(dialogs.showNeteaseSavedCookieDialog)
-        assertFalse(dialogs.showBiliSavedCookieDialog)
-        assertFalse(dialogs.showYouTubeSavedCookieDialog)
-        assertEquals(2, dialogs.neteaseTab.intValue)
-        assertEquals(3, dialogs.biliTab.intValue)
-        assertEquals(4, dialogs.youtubeTab.intValue)
-        assertEquals(listOf(UiText.Literal("retained")), messages)
-        verifyNoInteractions(neteaseVm, biliVm, youtubeVm)
+        assertEquals(listOf<UiText?>(null, null, null, null), messages)
+        verifyNoInteractions(neteaseVm, biliVm, youtubeVm, qqMusicVm)
     }
 
     @Test
@@ -152,6 +142,16 @@ class SettingsAccountAuthControllerTest {
         assertEquals(CoreCommonR.string.settings_youtube_login_success, dialogs.loginSuccessTitleRes)
         assertEquals(listOf(null, null, UiText.Literal("bili error"), null, null, null, UiText.Literal("youtube error"), null), messages)
         verify(youtubeVm).refreshAuthHealth()
+
+        controller.actions.openQQMusicAtTab(3)
+        controller.actions.openQQMusicSavedCookieDialog()
+        controller.onQQMusicEvent(QQMusicAuthEvent.ShowSnack(UiText.Literal("qq error")))
+        controller.onQQMusicEvent(QQMusicAuthEvent.LoginSuccess)
+        assertEquals(3, dialogs.qqMusicTab.intValue)
+        assertFalse(dialogs.showQQMusicSheet)
+        assertFalse(dialogs.showQQMusicSavedCookieDialog)
+        assertEquals(CoreCommonR.string.settings_qq_music_login_success, dialogs.loginSuccessTitleRes)
+        verify(qqMusicVm).refreshAuthHealth()
     }
 
     @Test
@@ -159,17 +159,21 @@ class SettingsAccountAuthControllerTest {
         controller.actions.openNeteaseSavedCookieDialog()
         controller.actions.openBiliSavedCookieDialog()
         controller.actions.openYouTubeSavedCookieDialog()
+        controller.actions.openQQMusicSavedCookieDialog()
 
         controller.actions.logoutNetease()
         controller.actions.logoutBili()
         controller.actions.logoutYouTube()
+        controller.actions.logoutQQMusic()
 
         assertFalse(dialogs.showNeteaseSavedCookieDialog)
         assertFalse(dialogs.showBiliSavedCookieDialog)
         assertFalse(dialogs.showYouTubeSavedCookieDialog)
+        assertFalse(dialogs.showQQMusicSavedCookieDialog)
         verify(neteaseVm).clearCookies()
         verify(biliVm).clearCookies()
         verify(youtubeVm).clearAuth()
+        verify(qqMusicVm).clearCookies()
     }
 
     @Test

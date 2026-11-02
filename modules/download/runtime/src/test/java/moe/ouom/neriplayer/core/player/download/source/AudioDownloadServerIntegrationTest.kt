@@ -18,11 +18,14 @@ import moe.ouom.neriplayer.core.player.download.runtime.resolveDownloadSourceFor
 import moe.ouom.neriplayer.data.identity.stableKey
 import moe.ouom.neriplayer.data.model.SongItem
 import moe.ouom.neriplayer.data.model.lyrics.LyricEntry
+import moe.ouom.neriplayer.data.model.ltw.track.ListenTogetherChannels
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicAudioStream
 import moe.ouom.neriplayer.data.model.server.ServerSongRef
 import moe.ouom.neriplayer.data.model.settings.download.DownloadAudioQualitySelection
 import moe.ouom.neriplayer.platform.subsonic.api.SubsonicException
 import moe.ouom.neriplayer.platform.subsonic.repository.SubsonicDownloadSource
 import moe.ouom.neriplayer.platform.subsonic.repository.SubsonicRepository
+import moe.ouom.neriplayer.platform.qqmusic.api.client.QQMusicClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -44,6 +47,7 @@ class AudioDownloadServerIntegrationTest {
     private var previousHosts: DownloadHostBindings? = null
     private val sources = mock(DownloadSourceServices::class.java)
     private val repository = mock(SubsonicRepository::class.java)
+    private val qqMusicClient = mock(QQMusicClient::class.java)
     private val ref = ServerSongRef("00000000-0000-0000-0000-000000000001", "song:中文/1")
     private val song = SongItem(ref.numericId, "Song", "Artist", "Album", 0L, 60_000L, null,
         channelId = ServerSongRef.CHANNEL, audioId = ref.audioId, mediaUri = ref.mediaUri)
@@ -52,6 +56,7 @@ class AudioDownloadServerIntegrationTest {
     fun installHosts() {
         previousHosts = installed.get(registry) as DownloadHostBindings?
         `when`(sources.subsonicRepository).thenReturn(repository)
+        `when`(sources.qqMusicClient).thenReturn(qqMusicClient)
         DownloadHosts.install(DownloadHostBindings(
             mock(DownloadEnvironment::class.java), sources, mock(DownloadLyricServices::class.java),
             mock(DownloadCredentials::class.java), mock(DownloadedPlaybackHost::class.java)))
@@ -92,6 +97,66 @@ class AudioDownloadServerIntegrationTest {
         assertEquals(error, received)
         verify(sources, never()).neteaseClient
     }
+
+    @Test
+    fun `qq music resolver keeps vkey mirror candidates and never falls through to netease`() =
+        runBlocking<Unit> {
+            val qqSong = SongItem(
+                id = 42L,
+                name = "QQ Song",
+                artist = "Artist",
+                album = "Album",
+                albumId = 7L,
+                durationMs = 180_000L,
+                coverUrl = null,
+                channelId = ListenTogetherChannels.QQ_MUSIC,
+                audioId = "song-mid",
+                subAudioId = "media-mid"
+            )
+            `when`(
+                qqMusicClient.getPlaybackStream(
+                    songMid = "song-mid",
+                    mediaMid = "media-mid",
+                    preferredQuality = "lossless"
+                )
+            ).thenReturn(
+                QQMusicAudioStream(
+                    url = "https://one.stream.qqmusic.qq.com/F000song-mid.flac",
+                    candidateUrls = listOf(
+                        "https://two.stream.qqmusic.qq.com/F000song-mid.flac"
+                    ),
+                    mimeType = "audio/flac",
+                    fileExtensionHint = "flac",
+                    qualityKey = "lossless",
+                    contentLength = 12_345L
+                )
+            )
+
+            val result = AudioDownloadManager.resolveDownloadSourceForAttempt(
+                song = qqSong,
+                downloadAudioQuality = DownloadAudioQualitySelection(
+                    neteaseQuality = "standard",
+                    youtubeQuality = "high",
+                    biliQuality = "high",
+                    qqMusicQuality = "lossless"
+                ),
+                isYouTubeMusic = false,
+                isBili = false,
+                state = AudioDownloadManager.DownloadExecutionAttemptState()
+            )
+
+            assertEquals(
+                "https://one.stream.qqmusic.qq.com/F000song-mid.flac",
+                result?.url
+            )
+            assertEquals(
+                listOf("https://two.stream.qqmusic.qq.com/F000song-mid.flac"),
+                result?.candidateUrls
+            )
+            assertEquals("flac", result?.fileExtensionHint)
+            assertEquals(12_345L, result?.contentLength)
+            verify(sources, never()).neteaseClient
+        }
 
     @Test
     fun `server lyrics become standalone sidecars without querying netease`() = runBlocking<Unit> {

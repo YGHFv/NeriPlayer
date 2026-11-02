@@ -27,10 +27,12 @@ import moe.ouom.neriplayer.data.model.settings.usb.DEFAULT_USB_EXCLUSIVE_VOLUME_
 
 data class PlaybackPreferenceSnapshot(
     val audioQuality: String = "exhigh",
+    val qqMusicAudioQuality: String = "exhigh",
     val youtubeAudioQuality: String = "high",
     val biliAudioQuality: String = "high",
     val mobileDataFollowDefaultAudioQuality: Boolean = true,
     val mobileDataNeteaseAudioQuality: String = DEFAULT_MOBILE_DATA_NETEASE_AUDIO_QUALITY,
+    val mobileDataQqMusicAudioQuality: String = DEFAULT_MOBILE_DATA_QQ_MUSIC_AUDIO_QUALITY,
     val mobileDataYouTubeAudioQuality: String = DEFAULT_MOBILE_DATA_YOUTUBE_AUDIO_QUALITY,
     val mobileDataBiliAudioQuality: String = DEFAULT_MOBILE_DATA_BILI_AUDIO_QUALITY,
     val keepLastPlaybackProgress: Boolean = true,
@@ -38,6 +40,7 @@ data class PlaybackPreferenceSnapshot(
     val keepPlaybackModeState: Boolean = true,
     val neteaseAutoSourceSwitch: Boolean = false,
     val neteaseLocalSourceFallback: Boolean = false,
+    val qqMusicAutoSourceSwitch: Boolean = false,
     val playbackFadeIn: Boolean = true,
     val playbackCrossfadeNext: Boolean = true,
     val sleepTimerFinishCurrentOnExpiry: Boolean = false,

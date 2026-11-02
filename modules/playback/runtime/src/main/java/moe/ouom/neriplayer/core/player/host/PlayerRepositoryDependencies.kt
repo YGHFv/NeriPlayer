@@ -8,6 +8,8 @@ import moe.ouom.neriplayer.platform.search.api.client.CloudMusicSearchApi
 import moe.ouom.neriplayer.platform.youtube.api.client.YouTubeMusicClient
 import moe.ouom.neriplayer.platform.bilibili.auth.BiliCookieRepository
 import moe.ouom.neriplayer.platform.netease.auth.NeteaseCookieRepository
+import moe.ouom.neriplayer.platform.qqmusic.api.client.QQMusicClient
+import moe.ouom.neriplayer.platform.qqmusic.auth.QQMusicAuthRepository
 import moe.ouom.neriplayer.data.history.PlayHistoryRepository
 import moe.ouom.neriplayer.platform.lyrics.repository.AmllLyricsRepository
 import moe.ouom.neriplayer.platform.lyrics.repository.EditableLyricsMatcher
@@ -31,6 +33,7 @@ interface PlayerRepositoryDependencies {
     val biliCookieRepo: BiliCookieRepository
     val neteaseCookieRepo: NeteaseCookieRepository
     val youtubeAuthRepo: YouTubeAuthRepository
+    val qqMusicAuthRepo: QQMusicAuthRepository
     val biliClient: BiliClient
     val neteaseClient: NeteaseClient
     val youtubeMusicClient: YouTubeMusicClient
@@ -40,6 +43,7 @@ interface PlayerRepositoryDependencies {
     val biliVideoSkipRepository: BiliVideoSkipRepository
     val cloudMusicSearchApi: CloudMusicSearchApi
     val qqMusicSearchApi: QQMusicLyricsRepository
+    val qqMusicClient: QQMusicClient
     val lrcLibClient: LrcLibLyricsRepository
     val amllTtmlClient: AmllLyricsRepository
     val editableLyricsMatcher: EditableLyricsMatcher

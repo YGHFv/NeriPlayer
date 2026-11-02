@@ -381,6 +381,7 @@ internal fun resolveNowPlayingPlaybackSourceType(
         PlaybackAudioSource.NETEASE -> return PlaybackSourceType.NETEASE
         PlaybackAudioSource.BILIBILI -> return PlaybackSourceType.BILIBILI
         PlaybackAudioSource.YOUTUBE_MUSIC -> return PlaybackSourceType.YOUTUBE_MUSIC
+        PlaybackAudioSource.QQ_MUSIC -> return PlaybackSourceType.QQ_MUSIC
         PlaybackAudioSource.LOCAL,
         null -> Unit
     }

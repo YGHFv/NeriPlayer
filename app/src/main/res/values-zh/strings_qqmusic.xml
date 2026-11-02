@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="qq_music_library_created">自建歌单</string>
+    <string name="qq_music_library_empty">暂无 QQ 音乐歌单</string>
+    <string name="qq_music_library_empty_hint">收藏或创建歌单后会显示在这里</string>
+    <string name="qq_music_library_favorite">收藏歌单</string>
+    <string name="qq_music_library_liked">我喜欢</string>
+    <string name="qq_music_library_load_failed">QQ 音乐歌单加载失败</string>
+    <string name="qq_music_library_loading">正在加载 QQ 音乐歌单…</string>
+    <string name="qq_music_library_login_hint">请在设置中登录 QQ 音乐后查看账号歌单</string>
+    <string name="qq_music_library_login_required">需要登录 QQ 音乐</string>
+    <string name="qq_music_library_partial">部分歌单加载失败</string>
+    <string name="qq_music_library_subtitle">%1$d 首 · %2$s</string>
+    <string name="qq_music_web_login">QQ 音乐网页登录</string>
+    <string name="qq_music_qr_login">QQ 音乐扫码登录</string>
+    <string name="qq_music_qr_login_title">连接 QQ 音乐账号</string>
+    <string name="qq_music_qr_login_subtitle">选择 QQ 或微信扫码，并在手机上确认登录。</string>
+    <string name="qq_music_qr_login_loading">正在生成二维码…</string>
+    <string name="qq_music_qr_login_waiting_qq">请使用手机 QQ 扫码登录</string>
+    <string name="qq_music_qr_login_waiting_wechat">请使用微信扫码登录</string>
+    <string name="qq_music_qr_login_scanned">已扫码，请在手机上确认登录</string>
+    <string name="qq_music_qr_login_refused">已在手机端取消登录，请刷新二维码后重试</string>
+    <string name="qq_music_qr_login_expired">二维码已过期，请刷新</string>
+    <string name="qq_music_qr_login_failed">二维码登录失败：%1$s</string>
+    <string name="qq_music_qr_login_retry">刷新二维码</string>
+    <string name="qq_music_qr_login_web_fallback">网页登录兜底</string>
+    <string name="qq_music_qr_login_cookie_incomplete">登录已确认，但没有拿到完整凭据，请重试</string>
+    <string name="qq_music_qr_login_hint">二维码由 QQ 音乐登录接口生成。确认后会自动监听状态并保存凭据；如遇风控可切换到网页登录。</string>
+    <string name="qq_music_qr_login_channel_qq">QQ 扫码</string>
+    <string name="qq_music_qr_login_channel_wechat">微信扫码</string>
+    <string name="qq_music_qr_login_invalid_image">登录服务返回了无效二维码图片</string>
+    <string name="qq_music_name">QQ 音乐</string>
+    <string name="qq_music_search_placeholder">搜索 QQ 音乐</string>
+    <string name="qq_music_explore_hint">输入关键词搜索 QQ 音乐歌曲</string>
+    <string name="qq_music_explore_login_hint">未登录时可用曲目和音质受限；请到设置中登录 QQ 音乐</string>
+</resources>

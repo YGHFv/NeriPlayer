@@ -291,6 +291,19 @@ abstract class PlaybackSettingsSection protected constructor() {
     )
 
     @AutoSetting(
+        key = "qq_music_auto_source_switch",
+        type = SettingValueType.Boolean,
+        defaultBoolean = false,
+        order = 134,
+        ui = SettingUiType.Custom,
+        access = SettingAccessMode.KeyOnly
+    )
+    val qqMusicAutoSourceSwitch = autoSetting(
+        titleRes = CoreCommonR.string.settings_qq_music_auto_source_switch,
+        descriptionRes = CoreCommonR.string.settings_qq_music_auto_source_switch_desc
+    )
+
+    @AutoSetting(
         key = "youtube_playback_source",
         type = SettingValueType.String,
         defaultString = DEFAULT_YOUTUBE_PLAYBACK_SOURCE,

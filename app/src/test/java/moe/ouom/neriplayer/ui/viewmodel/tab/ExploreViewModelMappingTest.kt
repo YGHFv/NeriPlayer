@@ -5,6 +5,9 @@ import moe.ouom.neriplayer.common.R as CoreCommonR
 import moe.ouom.neriplayer.data.model.bilibili.video.UgcSeason
 import moe.ouom.neriplayer.data.model.bilibili.video.VideoBasicInfo
 import moe.ouom.neriplayer.data.model.bilibili.video.VideoStats
+import moe.ouom.neriplayer.data.model.ltw.track.ListenTogetherChannels
+import moe.ouom.neriplayer.data.model.music.MusicPlatform
+import moe.ouom.neriplayer.data.model.music.SongSearchInfo
 import moe.ouom.neriplayer.data.model.youtube.music.YouTubeMusicSearchResult
 import moe.ouom.neriplayer.data.model.youtube.music.YouTubeMusicSearchResultType
 import org.junit.Assert.assertEquals
@@ -134,6 +137,28 @@ class ExploreViewModelMappingTest {
         assertEquals("https://i.ytimg.com/vi/vid123/hqdefault.jpg", song.coverUrl)
         assertEquals("https://i.ytimg.com/vi/vid123/hqdefault.jpg", song.originalCoverUrl)
         assertTrue(song.albumId != video.albumId)
+    }
+
+    @Test
+    fun `QQ Music search result keeps song and media ids for playback`() {
+        val song = SongSearchInfo(
+            id = "0039MnYb0qxYhV",
+            platformId = "102065756",
+            songName = "Track",
+            singer = "Artist",
+            duration = "3:05",
+            source = MusicPlatform.QQ_MUSIC,
+            albumName = "Album",
+            coverUrl = "https://img/cover.jpg",
+            mediaId = "0039MnYb0qxYhVmedia"
+        ).toQQMusicSongItem()
+
+        assertEquals(102065756L, song.id)
+        assertEquals(ListenTogetherChannels.QQ_MUSIC, song.channelId)
+        assertEquals("0039MnYb0qxYhV", song.audioId)
+        assertEquals("0039MnYb0qxYhVmedia", song.subAudioId)
+        assertEquals(185_000L, song.durationMs)
+        assertEquals("https://img/cover.jpg", song.originalCoverUrl)
     }
 
     @Test

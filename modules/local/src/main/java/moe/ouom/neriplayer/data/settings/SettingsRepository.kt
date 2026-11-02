@@ -64,7 +64,9 @@ import moe.ouom.neriplayer.data.settings.lyrics.resolveLyricFontScales
 import moe.ouom.neriplayer.data.model.settings.playback.PlaybackControlLayoutPreferences
 import moe.ouom.neriplayer.data.settings.playback.normalizeMobileDataBiliAudioQuality
 import moe.ouom.neriplayer.data.settings.playback.normalizeMobileDataNeteaseAudioQuality
+import moe.ouom.neriplayer.data.settings.playback.normalizeMobileDataQqMusicAudioQuality
 import moe.ouom.neriplayer.data.settings.playback.normalizeMobileDataYouTubeAudioQuality
+import moe.ouom.neriplayer.data.settings.playback.normalizeQQMusicAudioQuality
 import moe.ouom.neriplayer.data.settings.playback.resolveLegacyMobileDataBiliAudioQuality
 import moe.ouom.neriplayer.data.settings.playback.resolveLegacyMobileDataFollowDefaultAudioQuality
 import moe.ouom.neriplayer.data.settings.playback.resolveLegacyMobileDataNeteaseAudioQuality
@@ -225,6 +227,11 @@ class SettingsRepository(private val context: Context) {
     val biliAudioQualityFlow: Flow<String> =
         dataStoreSettingFlow { it[SettingsKeys.BILI_AUDIO_QUALITY] ?: "high" }
 
+    val qqMusicAudioQualityFlow: Flow<String> =
+        dataStoreSettingFlow {
+            normalizeQQMusicAudioQuality(it[SettingsKeys.QQ_MUSIC_AUDIO_QUALITY])
+        }
+
     val mobileDataFollowDefaultAudioQualityFlow: Flow<Boolean> =
         dataStoreSettingFlow { prefs ->
             prefs[SettingsKeys.MOBILE_DATA_FOLLOW_DEFAULT_AUDIO_QUALITY]
@@ -261,6 +268,13 @@ class SettingsRepository(private val context: Context) {
                     ?: resolveLegacyMobileDataBiliAudioQuality(
                         prefs[SettingsKeys.MOBILE_DATA_DOWNGRADE_QUALITY]
                     )
+            )
+        }
+
+    val mobileDataQqMusicAudioQualityFlow: Flow<String> =
+        dataStoreSettingFlow { prefs ->
+            normalizeMobileDataQqMusicAudioQuality(
+                prefs[SettingsKeys.MOBILE_DATA_QQ_MUSIC_AUDIO_QUALITY]
             )
         }
 
@@ -657,6 +671,9 @@ class SettingsRepository(private val context: Context) {
     val neteaseLocalSourceFallbackFlow: Flow<Boolean> =
         dataStoreSettingFlow { it[SettingsKeys.NETEASE_LOCAL_SOURCE_FALLBACK] ?: false }
 
+    val qqMusicAutoSourceSwitchFlow: Flow<Boolean> =
+        dataStoreSettingFlow { it[SettingsKeys.QQ_MUSIC_AUTO_SOURCE_SWITCH] ?: false }
+
     val stopOnBluetoothDisconnectFlow: Flow<Boolean> =
         dataStoreSettingFlow { it[SettingsKeys.STOP_ON_BLUETOOTH_DISCONNECT] ?: true }
 
@@ -847,6 +864,14 @@ class SettingsRepository(private val context: Context) {
         updatePlaybackPreferenceSnapshot(context) { it.copy(biliAudioQuality = value) }
     }
 
+    suspend fun setQqMusicAudioQuality(value: String) {
+        val normalized = normalizeQQMusicAudioQuality(value)
+        context.dataStore.edit { it[SettingsKeys.QQ_MUSIC_AUDIO_QUALITY] = normalized }
+        updatePlaybackPreferenceSnapshot(context) {
+            it.copy(qqMusicAudioQuality = normalized)
+        }
+    }
+
     suspend fun setMobileDataFollowDefaultAudioQuality(enabled: Boolean) {
         context.dataStore.edit {
             it[SettingsKeys.MOBILE_DATA_FOLLOW_DEFAULT_AUDIO_QUALITY] = enabled
@@ -883,6 +908,16 @@ class SettingsRepository(private val context: Context) {
         }
         updatePlaybackPreferenceSnapshot(context) {
             it.copy(mobileDataBiliAudioQuality = normalized)
+        }
+    }
+
+    suspend fun setMobileDataQqMusicAudioQuality(value: String) {
+        val normalized = normalizeMobileDataQqMusicAudioQuality(value)
+        context.dataStore.edit {
+            it[SettingsKeys.MOBILE_DATA_QQ_MUSIC_AUDIO_QUALITY] = normalized
+        }
+        updatePlaybackPreferenceSnapshot(context) {
+            it.copy(mobileDataQqMusicAudioQuality = normalized)
         }
     }
 
@@ -1521,6 +1556,13 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[SettingsKeys.NETEASE_LOCAL_SOURCE_FALLBACK] = enabled }
         updatePlaybackPreferenceSnapshot(context) {
             it.copy(neteaseLocalSourceFallback = enabled)
+        }
+    }
+
+    suspend fun setQqMusicAutoSourceSwitch(enabled: Boolean) {
+        context.dataStore.edit { it[SettingsKeys.QQ_MUSIC_AUTO_SOURCE_SWITCH] = enabled }
+        updatePlaybackPreferenceSnapshot(context) {
+            it.copy(qqMusicAutoSourceSwitch = enabled)
         }
     }
 

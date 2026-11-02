@@ -34,7 +34,8 @@ internal data class AppConfigBackupSections(
     val youTubeAuth: Boolean,
     val gitHubSync: Boolean,
     val webDavSync: Boolean,
-    val syncPreferences: Boolean
+    val syncPreferences: Boolean,
+    val qqMusicAuth: Boolean = false
 ) {
     val hasSyncSection: Boolean
         get() = gitHubSync || webDavSync || syncPreferences
@@ -45,6 +46,7 @@ internal data class AppConfigBackupSections(
         language,
         neteaseAuth,
         biliAuth,
+        qqMusicAuth,
         youTubeAuth,
         gitHubSync,
         webDavSync,
@@ -135,6 +137,7 @@ object AppConfigBackupCodec {
             language = "language" in this,
             neteaseAuth = "neteaseAuth" in this,
             biliAuth = "biliAuth" in this,
+            qqMusicAuth = "qqMusicAuth" in this,
             youTubeAuth = "youTubeAuth" in this,
             gitHubSync = "gitHubSync" in this,
             webDavSync = "webDavSync" in this,
@@ -142,5 +145,12 @@ object AppConfigBackupCodec {
         )
     }
 
-    private val LOGIN_STATE_SECTIONS = setOf("neteaseAuth", "biliAuth", "youTubeAuth", "gitHubSync", "webDavSync")
+    private val LOGIN_STATE_SECTIONS = setOf(
+        "neteaseAuth",
+        "biliAuth",
+        "qqMusicAuth",
+        "youTubeAuth",
+        "gitHubSync",
+        "webDavSync"
+    )
 }

@@ -3,19 +3,30 @@ package moe.ouom.neriplayer.data.model.qqmusic.search
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-@Serializable data class QQMusicSearchResponse(val data: QQMusicSearchData?)
+@Serializable data class QQMusicSearchResponse(
+    val code: Int = 0,
+    val subcode: Int = 0,
+    val data: QQMusicSearchData?
+)
 @Serializable data class QQMusicSearchData(val song: QQMusicSearchSong?)
-@Serializable data class QQMusicSearchSong(val list: List<QQMusicSongSummary>?)
+@Serializable data class QQMusicSearchSong(
+    val list: List<QQMusicSongSummary>?,
+    @SerialName("totalnum") val total: Int? = null
+)
 @Serializable data class QQMusicSongSummary(
     @SerialName("songmid") val songMid: String,
+    @SerialName("songid") val songId: Long? = null,
     @SerialName("songname") val songName: String,
     val singer: List<QQMusicArtist>,
     @SerialName("albummid") val albumMid: String?,
     @SerialName("albumname") val albumName: String?,
-    val interval: Long // 歌曲时长 (秒)
+    val interval: Long, // 歌曲时长 (秒)
+    @SerialName("strMediaMid") val mediaMid: String? = null,
+    val file: QQMusicSongFile? = null
 )
 
 @Serializable data class QQMusicArtist(val name: String)
+@Serializable data class QQMusicSongFile(@SerialName("media_mid") val mediaMid: String? = null)
 
 @Serializable data class QQMusicDetailResponse(val data: QQMusicDetailData?)
 @Serializable data class QQMusicDetailData(@SerialName("track_info") val trackInfo: QQMusicTrackInfo?)

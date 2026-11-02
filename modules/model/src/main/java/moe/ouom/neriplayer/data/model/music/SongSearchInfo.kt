@@ -10,5 +10,7 @@ data class SongSearchInfo(
     val duration: String,
     val source: MusicPlatform,
     val albumName: String?,
-    val coverUrl: String?
+    val coverUrl: String?,
+    val platformId: String? = null,
+    val mediaId: String? = null
 )

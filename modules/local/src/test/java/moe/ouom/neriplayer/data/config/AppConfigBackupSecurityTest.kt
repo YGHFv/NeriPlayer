@@ -24,6 +24,7 @@ class AppConfigBackupSecurityTest {
         settings = TypedPreferenceSnapshot(strings = mapOf("audio_quality" to "lossless")),
         neteaseAuth = SavedCookieConfigSnapshot(cookies = mapOf("MUSIC_U" to "synthetic-netease")),
         biliAuth = SavedCookieConfigSnapshot(cookies = mapOf("SESSDATA" to "synthetic-bili")),
+        qqMusicAuth = SavedCookieConfigSnapshot(cookies = mapOf("qm_keyst" to "synthetic-qq")),
         youTubeAuth = YouTubeAuthConfigSnapshot(cookieHeader = "SID=synthetic-youtube"),
         gitHubSync = GitHubSyncConfigSnapshot(token = "synthetic-github", repoOwner = "owner", repoName = "repo"),
         webDavSync = WebDavSyncConfigSnapshot(serverUrl = "https://dav.example", password = "synthetic-webdav"),
@@ -36,13 +37,14 @@ class AppConfigBackupSecurityTest {
         val root = Json.parseToJsonElement(exported).jsonObject
         val decoded = AppConfigBackupCodec.decodeForImport(exported)
 
-        for (section in listOf("neteaseAuth", "biliAuth", "youTubeAuth", "gitHubSync", "webDavSync")) {
+        for (section in listOf("neteaseAuth", "biliAuth", "qqMusicAuth", "youTubeAuth", "gitHubSync", "webDavSync")) {
             assertFalse("unexpected section: $section", section in root)
         }
         assertEquals("lossless", decoded.payload.settings.strings["audio_quality"])
         assertEquals("EVERY_30_MINUTES", decoded.payload.syncPreferences.playHistoryUpdateMode)
         assertFalse(decoded.sections.neteaseAuth)
         assertFalse(decoded.sections.biliAuth)
+        assertFalse(decoded.sections.qqMusicAuth)
         assertFalse(decoded.sections.youTubeAuth)
         assertFalse(decoded.sections.gitHubSync)
         assertFalse(decoded.sections.webDavSync)

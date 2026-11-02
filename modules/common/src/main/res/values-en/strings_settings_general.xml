@@ -308,6 +308,7 @@
     <string name="settings_download_netease_audio_quality">NetEase download quality</string>
     <string name="settings_download_youtube_audio_quality">YouTube download quality</string>
     <string name="settings_download_bili_audio_quality">Bilibili download quality</string>
+    <string name="settings_download_qq_music_audio_quality">QQ Music download quality</string>
     <string name="settings_download_parallelism">Download thread count</string>
     <string name="settings_download_parallelism_desc">Controls how many song download tasks can run at the same time, up to 8</string>
     <string name="settings_download_parallelism_current">Current: %1$d, max %2$d</string>

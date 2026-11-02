@@ -74,6 +74,7 @@ import moe.ouom.neriplayer.data.settings.AutoSettingsSchema
 import moe.ouom.neriplayer.data.settings.autoSettingFlow
 import moe.ouom.neriplayer.data.settings.download.normalizeDownloadBiliAudioQuality
 import moe.ouom.neriplayer.data.settings.download.normalizeDownloadNeteaseAudioQuality
+import moe.ouom.neriplayer.data.settings.download.normalizeDownloadQQMusicAudioQuality
 import moe.ouom.neriplayer.data.settings.download.normalizeDownloadYouTubeAudioQuality
 import moe.ouom.neriplayer.data.settings.download.readDownloadFollowPlaybackAudioQualityStartupValue
 import moe.ouom.neriplayer.data.settings.download.setDownloadFollowPlaybackAudioQuality
@@ -282,7 +283,8 @@ private fun SettingsDownloadExpandedContent(
 private enum class DownloadAudioQualityPlatform {
     NETEASE,
     YOUTUBE,
-    BILI
+    BILI,
+    QQ_MUSIC
 }
 
 internal const val DOWNLOAD_QUALITY_FOLLOW_PLAYBACK_CARD_TEST_TAG =
@@ -359,6 +361,7 @@ private fun DownloadAudioQualitySettings(
     val neteaseSetting = AutoSettingsSchema.download.downloadNeteaseAudioQuality
     val youtubeSetting = AutoSettingsSchema.download.downloadYouTubeAudioQuality
     val biliSetting = AutoSettingsSchema.download.downloadBiliAudioQuality
+    val qqMusicSetting = AutoSettingsSchema.download.downloadQQMusicAudioQuality
     val neteaseQuality by remember(repository, neteaseSetting) {
         repository.flow(neteaseSetting)
     }.collectAsState(initial = neteaseSetting.defaultValue)
@@ -368,6 +371,9 @@ private fun DownloadAudioQualitySettings(
     val biliQuality by remember(repository, biliSetting) {
         repository.flow(biliSetting)
     }.collectAsState(initial = biliSetting.defaultValue)
+    val qqMusicQuality by remember(repository, qqMusicSetting) {
+        repository.flow(qqMusicSetting)
+    }.collectAsState(initial = qqMusicSetting.defaultValue)
     var dialogPlatform by remember { mutableStateOf<DownloadAudioQualityPlatform?>(null) }
 
     if (!followsPlaybackQuality) {
@@ -435,6 +441,22 @@ private fun DownloadAudioQualitySettings(
                 highlightPulse = highlightPulse,
                 onHighlightFinished = onHighlightFinished
             )
+
+            DownloadAudioQualityListItem(
+                setting = qqMusicSetting,
+                value = normalizeDownloadQQMusicAudioQuality(qqMusicQuality),
+                valueLabel = stringResource(
+                    when (normalizeDownloadQQMusicAudioQuality(qqMusicQuality)) {
+                        "standard" -> CoreCommonR.string.quality_standard
+                        "lossless" -> CoreCommonR.string.quality_lossless
+                        else -> CoreCommonR.string.quality_very_high
+                    }
+                ),
+                onClick = { dialogPlatform = DownloadAudioQualityPlatform.QQ_MUSIC },
+                highlightTargetId = highlightTargetId,
+                highlightPulse = highlightPulse,
+                onHighlightFinished = onHighlightFinished
+            )
         }
     }
 
@@ -496,6 +518,23 @@ private fun DownloadAudioQualitySettings(
                     onSelect = { value ->
                         dialogPlatform = null
                         scope.launch { repository.set(biliSetting, value) }
+                    }
+                )
+            }
+
+            DownloadAudioQualityPlatform.QQ_MUSIC -> {
+                QualityOptionsDialog(
+                    title = stringResource(CoreCommonR.string.settings_download_qq_music_audio_quality),
+                    selectedValue = normalizeDownloadQQMusicAudioQuality(qqMusicQuality),
+                    options = listOf(
+                        "lossless" to stringResource(CoreCommonR.string.quality_lossless),
+                        "exhigh" to stringResource(CoreCommonR.string.quality_very_high),
+                        "standard" to stringResource(CoreCommonR.string.quality_standard)
+                    ),
+                    onDismiss = { dialogPlatform = null },
+                    onSelect = { value ->
+                        dialogPlatform = null
+                        scope.launch { repository.set(qqMusicSetting, value) }
                     }
                 )
             }

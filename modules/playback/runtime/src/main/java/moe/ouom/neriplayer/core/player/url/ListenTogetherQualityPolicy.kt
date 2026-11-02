@@ -11,6 +11,7 @@ private val NETEASE_SHARE_DEFAULT_GROUPS = listOf(
 
 internal const val MAX_LISTEN_TOGETHER_BILI_STREAM_URL_CANDIDATES = 2
 internal const val MAX_LISTEN_TOGETHER_YOUTUBE_STREAM_URL_CANDIDATES = 1
+internal const val MAX_LISTEN_TOGETHER_QQ_MUSIC_STREAM_URL_CANDIDATES = 2
 
 private val BILI_HIGH_FALLBACK_ORDER = listOf("high", "medium", "low")
 
@@ -19,6 +20,7 @@ internal fun maxListenTogetherStreamUrlCandidates(source: PlaybackAudioSource): 
         PlaybackAudioSource.NETEASE -> MAX_LISTEN_TOGETHER_STREAM_URL_CANDIDATES
         PlaybackAudioSource.BILIBILI -> MAX_LISTEN_TOGETHER_BILI_STREAM_URL_CANDIDATES
         PlaybackAudioSource.YOUTUBE_MUSIC -> MAX_LISTEN_TOGETHER_YOUTUBE_STREAM_URL_CANDIDATES
+        PlaybackAudioSource.QQ_MUSIC -> MAX_LISTEN_TOGETHER_QQ_MUSIC_STREAM_URL_CANDIDATES
         PlaybackAudioSource.LOCAL, PlaybackAudioSource.SUBSONIC -> 0
     }
 }

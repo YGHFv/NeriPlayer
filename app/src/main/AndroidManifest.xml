@@ -144,6 +144,18 @@
             android:process=":youtube_web_login"
             android:theme="@style/Theme.Material3.DayNight.NoActionBar"
             />
+        <activity
+            android:name=".activity.auth.QQMusicWebLoginActivity"
+            android:exported="false"
+            android:process=":qq_music_login"
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar"
+            />
+        <activity
+            android:name=".activity.auth.QQMusicQrLoginActivity"
+            android:exported="false"
+            android:process=":qq_music_login"
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar"
+            />
 
         <receiver
             android:name="androidx.media.session.MediaButtonReceiver"

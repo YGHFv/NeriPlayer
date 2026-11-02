@@ -127,6 +127,7 @@ data class AppConfigBackup(
     val language: LanguageConfigSnapshot = LanguageConfigSnapshot(),
     val neteaseAuth: SavedCookieConfigSnapshot = SavedCookieConfigSnapshot(),
     val biliAuth: SavedCookieConfigSnapshot = SavedCookieConfigSnapshot(),
+    val qqMusicAuth: SavedCookieConfigSnapshot = SavedCookieConfigSnapshot(),
     val youTubeAuth: YouTubeAuthConfigSnapshot = YouTubeAuthConfigSnapshot(),
     val gitHubSync: GitHubSyncConfigSnapshot = GitHubSyncConfigSnapshot(),
     val webDavSync: WebDavSyncConfigSnapshot = WebDavSyncConfigSnapshot(),
@@ -138,6 +139,7 @@ data class AppConfigBackup(
             language.hasValue() ||
             neteaseAuth.hasData() ||
             biliAuth.hasData() ||
+            qqMusicAuth.hasData() ||
             youTubeAuth.hasData() ||
             gitHubSync.hasData() ||
             webDavSync.hasData() ||

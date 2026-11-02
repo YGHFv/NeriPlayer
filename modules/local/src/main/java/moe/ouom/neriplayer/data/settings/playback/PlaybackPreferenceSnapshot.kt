@@ -25,6 +25,7 @@ package moe.ouom.neriplayer.data.settings.playback
 
 import moe.ouom.neriplayer.data.model.settings.playback.DEFAULT_MOBILE_DATA_BILI_AUDIO_QUALITY
 import moe.ouom.neriplayer.data.model.settings.playback.DEFAULT_MOBILE_DATA_NETEASE_AUDIO_QUALITY
+import moe.ouom.neriplayer.data.model.settings.playback.DEFAULT_MOBILE_DATA_QQ_MUSIC_AUDIO_QUALITY
 import moe.ouom.neriplayer.data.model.settings.playback.DEFAULT_MOBILE_DATA_YOUTUBE_AUDIO_QUALITY
 import moe.ouom.neriplayer.data.model.settings.playback.PlaybackPreferenceSnapshot
 import moe.ouom.neriplayer.data.settings.SettingsKeys
@@ -93,6 +94,7 @@ private const val PLAYBACK_SNAPSHOT_READY_KEY = "ready"
 private const val PLAYBACK_AUDIO_QUALITY_KEY = "audio_quality"
 private const val PLAYBACK_YOUTUBE_AUDIO_QUALITY_KEY = "youtube_audio_quality"
 private const val PLAYBACK_BILI_AUDIO_QUALITY_KEY = "bili_audio_quality"
+private const val PLAYBACK_QQ_MUSIC_AUDIO_QUALITY_KEY = "qq_music_audio_quality"
 private const val PLAYBACK_MOBILE_DATA_DOWNGRADE_QUALITY_KEY = "mobile_data_downgrade_quality"
 private const val PLAYBACK_MOBILE_DATA_FOLLOW_DEFAULT_AUDIO_QUALITY_KEY =
     "mobile_data_follow_default_audio_quality"
@@ -102,12 +104,15 @@ private const val PLAYBACK_MOBILE_DATA_YOUTUBE_AUDIO_QUALITY_KEY =
     "mobile_data_youtube_audio_quality"
 private const val PLAYBACK_MOBILE_DATA_BILI_AUDIO_QUALITY_KEY =
     "mobile_data_bili_audio_quality"
+private const val PLAYBACK_MOBILE_DATA_QQ_MUSIC_AUDIO_QUALITY_KEY =
+    "mobile_data_qq_music_audio_quality"
 private const val PLAYBACK_KEEP_PROGRESS_KEY = "keep_last_playback_progress"
 private const val PLAYBACK_REMEMBER_LONG_FORM_PROGRESS_KEY =
     "remember_long_form_playback_progress"
 private const val PLAYBACK_KEEP_MODE_STATE_KEY = "keep_playback_mode_state"
 private const val PLAYBACK_NETEASE_AUTO_SOURCE_SWITCH_KEY = "netease_auto_source_switch"
 private const val PLAYBACK_NETEASE_LOCAL_SOURCE_FALLBACK_KEY = "netease_local_source_fallback"
+private const val PLAYBACK_QQ_MUSIC_AUTO_SOURCE_SWITCH_KEY = "qq_music_auto_source_switch"
 private const val PLAYBACK_FADE_IN_KEY = "playback_fade_in"
 private const val PLAYBACK_CROSSFADE_NEXT_KEY = "playback_crossfade_next"
 private const val PLAYBACK_SLEEP_TIMER_FINISH_CURRENT_ON_EXPIRY_KEY =
@@ -222,6 +227,10 @@ fun persistPlaybackPreferenceSnapshot(
                     normalizedSnapshot.youtubeAudioQuality
                 )
                 .putString(PLAYBACK_BILI_AUDIO_QUALITY_KEY, normalizedSnapshot.biliAudioQuality)
+                .putString(
+                    PLAYBACK_QQ_MUSIC_AUDIO_QUALITY_KEY,
+                    normalizedSnapshot.qqMusicAudioQuality
+                )
                 .putBoolean(
                     PLAYBACK_MOBILE_DATA_FOLLOW_DEFAULT_AUDIO_QUALITY_KEY,
                     normalizedSnapshot.mobileDataFollowDefaultAudioQuality
@@ -238,6 +247,10 @@ fun persistPlaybackPreferenceSnapshot(
                     PLAYBACK_MOBILE_DATA_BILI_AUDIO_QUALITY_KEY,
                     normalizedSnapshot.mobileDataBiliAudioQuality
                 )
+                .putString(
+                    PLAYBACK_MOBILE_DATA_QQ_MUSIC_AUDIO_QUALITY_KEY,
+                    normalizedSnapshot.mobileDataQqMusicAudioQuality
+                )
                 .putBoolean(PLAYBACK_KEEP_PROGRESS_KEY, normalizedSnapshot.keepLastPlaybackProgress)
                 .putBoolean(
                     PLAYBACK_REMEMBER_LONG_FORM_PROGRESS_KEY,
@@ -251,6 +264,10 @@ fun persistPlaybackPreferenceSnapshot(
                 .putBoolean(
                     PLAYBACK_NETEASE_LOCAL_SOURCE_FALLBACK_KEY,
                     normalizedSnapshot.neteaseLocalSourceFallback
+                )
+                .putBoolean(
+                    PLAYBACK_QQ_MUSIC_AUTO_SOURCE_SWITCH_KEY,
+                    normalizedSnapshot.qqMusicAutoSourceSwitch
                 )
                 .putBoolean(PLAYBACK_FADE_IN_KEY, normalizedSnapshot.playbackFadeIn)
                 .putBoolean(PLAYBACK_CROSSFADE_NEXT_KEY, normalizedSnapshot.playbackCrossfadeNext)
@@ -365,6 +382,9 @@ fun Preferences.toPlaybackPreferenceSnapshot(): PlaybackPreferenceSnapshot {
         audioQuality = valueOr(SettingsKeys.AUDIO_QUALITY, "exhigh"),
         youtubeAudioQuality = valueOr(SettingsKeys.YOUTUBE_AUDIO_QUALITY, "high"),
         biliAudioQuality = valueOr(SettingsKeys.BILI_AUDIO_QUALITY, "high"),
+        qqMusicAudioQuality = normalizeQQMusicAudioQuality(
+            this[SettingsKeys.QQ_MUSIC_AUDIO_QUALITY]
+        ),
         mobileDataFollowDefaultAudioQuality = valueOr(
             SettingsKeys.MOBILE_DATA_FOLLOW_DEFAULT_AUDIO_QUALITY,
             legacyMobileDataFollowsDefaultQuality(legacyMobileDataQuality)
@@ -387,11 +407,15 @@ fun Preferences.toPlaybackPreferenceSnapshot(): PlaybackPreferenceSnapshot {
                 resolveLegacyMobileDataBiliAudioQuality(legacyMobileDataQuality)
             )
         ),
+        mobileDataQqMusicAudioQuality = normalizeMobileDataQqMusicAudioQuality(
+            this[SettingsKeys.MOBILE_DATA_QQ_MUSIC_AUDIO_QUALITY]
+        ),
         keepLastPlaybackProgress = valueOr(SettingsKeys.KEEP_LAST_PLAYBACK_PROGRESS, true),
         rememberLongFormPlaybackProgress = valueOr(SettingsKeys.REMEMBER_LONG_FORM_PLAYBACK_PROGRESS, true),
         keepPlaybackModeState = valueOr(SettingsKeys.KEEP_PLAYBACK_MODE_STATE, true),
         neteaseAutoSourceSwitch = valueOr(SettingsKeys.NETEASE_AUTO_SOURCE_SWITCH, false),
         neteaseLocalSourceFallback = valueOr(SettingsKeys.NETEASE_LOCAL_SOURCE_FALLBACK, false),
+        qqMusicAutoSourceSwitch = valueOr(SettingsKeys.QQ_MUSIC_AUTO_SOURCE_SWITCH, false),
         playbackFadeIn = valueOr(SettingsKeys.PLAYBACK_FADE_IN, true),
         playbackCrossfadeNext = valueOr(SettingsKeys.PLAYBACK_CROSSFADE_NEXT, true),
         sleepTimerFinishCurrentOnExpiry = valueOr(SettingsKeys.PLAYBACK_SLEEP_TIMER_FINISH_CURRENT_ON_EXPIRY, false),
@@ -487,6 +511,9 @@ private fun SharedPreferences.toCachedPlaybackPreferenceSnapshot(): PlaybackPref
         audioQuality = prefs.stringOr(PLAYBACK_AUDIO_QUALITY_KEY, "exhigh"),
         youtubeAudioQuality = prefs.stringOr(PLAYBACK_YOUTUBE_AUDIO_QUALITY_KEY, "high"),
         biliAudioQuality = prefs.stringOr(PLAYBACK_BILI_AUDIO_QUALITY_KEY, "high"),
+        qqMusicAudioQuality = normalizeQQMusicAudioQuality(
+            prefs.getString(PLAYBACK_QQ_MUSIC_AUDIO_QUALITY_KEY, null)
+        ),
         mobileDataFollowDefaultAudioQuality = prefs.cachedMobileDataFollowsDefaultQuality(legacyMobileDataQuality),
         mobileDataNeteaseAudioQuality = normalizeMobileDataNeteaseAudioQuality(
             prefs.storedStringOr(
@@ -509,6 +536,9 @@ private fun SharedPreferences.toCachedPlaybackPreferenceSnapshot(): PlaybackPref
                 resolveLegacyMobileDataBiliAudioQuality(legacyMobileDataQuality)
             )
         ),
+        mobileDataQqMusicAudioQuality = normalizeMobileDataQqMusicAudioQuality(
+            prefs.getString(PLAYBACK_MOBILE_DATA_QQ_MUSIC_AUDIO_QUALITY_KEY, null)
+        ),
         keepLastPlaybackProgress = prefs.getBoolean(PLAYBACK_KEEP_PROGRESS_KEY, true),
         rememberLongFormPlaybackProgress = prefs.getBoolean(
             PLAYBACK_REMEMBER_LONG_FORM_PROGRESS_KEY,
@@ -519,6 +549,8 @@ private fun SharedPreferences.toCachedPlaybackPreferenceSnapshot(): PlaybackPref
             prefs.getBoolean(PLAYBACK_NETEASE_AUTO_SOURCE_SWITCH_KEY, false),
         neteaseLocalSourceFallback =
             prefs.getBoolean(PLAYBACK_NETEASE_LOCAL_SOURCE_FALLBACK_KEY, false),
+        qqMusicAutoSourceSwitch =
+            prefs.getBoolean(PLAYBACK_QQ_MUSIC_AUTO_SOURCE_SWITCH_KEY, false),
         playbackFadeIn = prefs.getBoolean(PLAYBACK_FADE_IN_KEY, true),
         playbackCrossfadeNext = prefs.getBoolean(PLAYBACK_CROSSFADE_NEXT_KEY, true),
         sleepTimerFinishCurrentOnExpiry = prefs.getBoolean(
@@ -640,12 +672,15 @@ fun PlaybackPreferenceSnapshot.sanitized(): PlaybackPreferenceSnapshot {
         audioQuality = audioQuality.trim().ifBlank { "exhigh" },
         youtubeAudioQuality = youtubeAudioQuality.trim().ifBlank { "high" },
         biliAudioQuality = biliAudioQuality.trim().ifBlank { "high" },
+        qqMusicAudioQuality = normalizeQQMusicAudioQuality(qqMusicAudioQuality),
         mobileDataNeteaseAudioQuality =
             normalizeMobileDataNeteaseAudioQuality(mobileDataNeteaseAudioQuality),
         mobileDataYouTubeAudioQuality =
             normalizeMobileDataYouTubeAudioQuality(mobileDataYouTubeAudioQuality),
         mobileDataBiliAudioQuality =
             normalizeMobileDataBiliAudioQuality(mobileDataBiliAudioQuality),
+        mobileDataQqMusicAudioQuality =
+            normalizeMobileDataQqMusicAudioQuality(mobileDataQqMusicAudioQuality),
         playbackFadeInDurationMs = playbackFadeInDurationMs.coerceAtLeast(0L),
         playbackFadeOutDurationMs = playbackFadeOutDurationMs.coerceAtLeast(0L),
         playbackCrossfadeInDurationMs = playbackCrossfadeInDurationMs.coerceAtLeast(0L),

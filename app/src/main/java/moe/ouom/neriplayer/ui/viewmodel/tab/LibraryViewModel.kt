@@ -51,6 +51,7 @@ import moe.ouom.neriplayer.platform.youtube.config.YouTubeFeatureGate
 import moe.ouom.neriplayer.data.model.playlist.LocalPlaylist
 import moe.ouom.neriplayer.data.local.playlist.LocalPlaylistRepository
 import moe.ouom.neriplayer.data.model.playlist.LocalPlaylistDeleteResult
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicLibraryPlaylist
 import moe.ouom.neriplayer.data.local.playlist.runLocalPlaylistMutationSafely
 import moe.ouom.neriplayer.data.model.SongItem
 import moe.ouom.neriplayer.common.logging.NPLogger
@@ -70,9 +71,14 @@ data class LibraryUiState(
     val youtubeMusicError: String? = null,
     val biliPlaylists: List<BiliPlaylist> = emptyList(),
     val biliError: String? = null,
+    val qqMusicPlaylists: List<QQMusicPlaylist> = emptyList(),
+    val qqMusicError: String? = null,
+    val qqMusicWarning: String? = null,
+    val qqMusicLoggedIn: Boolean = false,
     val neteaseRefreshing: Boolean = false,
     val youtubeMusicRefreshing: Boolean = false,
-    val biliRefreshing: Boolean = false
+    val biliRefreshing: Boolean = false,
+    val qqMusicRefreshing: Boolean = false
 )
 
 @Suppress("unused")
@@ -85,6 +91,7 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     private val biliCookieRepo = AppContainer.biliCookieRepo
     private val biliClient = AppContainer.biliClient
     private val youtubeAuthRepo = AppContainer.youtubeAuthRepo
+    private val qqMusicAuthRepo = AppContainer.qqMusicAuthRepo
 
 
     private val _uiState = MutableStateFlow(
@@ -120,6 +127,19 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
         state = _uiState,
         isEnabled = { youtubeEnabled },
         load = ::loadYouTubeMusicPlaylists
+    )
+    private val qqMusicRefreshOwner = LibraryQQMusicRefreshOwner(
+        scope = viewModelScope,
+        state = _uiState,
+        load = {
+            val result = withContext(Dispatchers.IO) {
+                AppContainer.qqMusicClient.getLibraryPlaylists()
+            }
+            LibraryQQMusicLoadResult(
+                playlists = result.playlists.map(::mapQQMusicPlaylist),
+                warning = result.warning
+            )
+        }
     )
 
     init {
@@ -188,6 +208,25 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
                     refreshBilibili()
                 } else {
                     biliRefreshOwner.clear()
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            var previousAuthFingerprint: String? = null
+            qqMusicAuthRepo.authFlow.collect { auth ->
+                val fingerprint = auth.cookies.entries
+                    .sortedBy { it.key }
+                    .joinToString("|") { "${it.key}=${it.value}" }
+                val authenticated = auth.hasLoginCookies()
+                val authChanged = fingerprint != previousAuthFingerprint
+                previousAuthFingerprint = fingerprint
+                _uiState.update {
+                    it.copy(qqMusicLoggedIn = authenticated)
+                }
+                when {
+                    !authenticated -> qqMusicRefreshOwner.clear()
+                    authChanged -> qqMusicRefreshOwner.onSessionChanged()
                 }
             }
         }
@@ -287,6 +326,12 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
         youtubeRefreshOwner.refresh()
     }
 
+    fun refreshQqMusicPlaylists() {
+        if (_uiState.value.qqMusicLoggedIn) {
+            qqMusicRefreshOwner.refresh()
+        }
+    }
+
     private suspend fun loadYouTubeMusicPlaylists(): List<YouTubeMusicPlaylist> {
         val playlists = withContext(Dispatchers.IO) {
             AppContainer.youtubeMusicClient.getLibraryPlaylists(
@@ -359,6 +404,18 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
             trackCount = playlist.trackCount ?: 0
         )
     }
+
+    private fun mapQQMusicPlaylist(
+        playlist: QQMusicLibraryPlaylist
+    ): QQMusicPlaylist = QQMusicPlaylist(
+        id = playlist.id,
+        dirId = playlist.dirId,
+        title = playlist.name,
+        coverUrl = playlist.coverUrl,
+        trackCount = playlist.trackCount,
+        playCount = playlist.playCount,
+        kind = playlist.kind
+    )
 }
 
 internal class LibraryNeteaseRefreshOwner(

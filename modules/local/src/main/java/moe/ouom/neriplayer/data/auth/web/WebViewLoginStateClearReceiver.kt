@@ -63,3 +63,6 @@ internal class BiliWebViewLoginStateClearReceiver :
 
 internal class YouTubeWebViewLoginStateClearReceiver :
     WebViewLoginStateClearReceiver(WebLoginPlatform.YOUTUBE)
+
+internal class QQMusicWebViewLoginStateClearReceiver :
+    WebViewLoginStateClearReceiver(WebLoginPlatform.QQ_MUSIC)

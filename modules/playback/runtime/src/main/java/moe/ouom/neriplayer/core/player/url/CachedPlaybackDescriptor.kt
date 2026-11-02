@@ -172,6 +172,7 @@ private fun qualityLabelForCachedSource(
         PlaybackAudioSource.NETEASE -> qualityLabelForNetease(key, getLocalizedString)
         PlaybackAudioSource.BILIBILI -> qualityLabelForBili(key, getLocalizedString)
         PlaybackAudioSource.YOUTUBE_MUSIC -> qualityLabelForYouTube(key, getLocalizedString)
+        PlaybackAudioSource.QQ_MUSIC -> qualityLabelForQqMusic(key, getLocalizedString)
         PlaybackAudioSource.SUBSONIC -> getLocalizedString(moe.ouom.neriplayer.common.R.string.server_quality_original)
         PlaybackAudioSource.LOCAL -> key
     }

@@ -32,10 +32,12 @@ import moe.ouom.neriplayer.common.R as CoreCommonR
 import moe.ouom.neriplayer.data.model.bilibili.skip.BiliSponsorBlockTarget
 import moe.ouom.neriplayer.platform.bilibili.playback.resolver.resolveBiliSong
 import moe.ouom.neriplayer.core.player.PlayerManager
+import moe.ouom.neriplayer.core.player.media.PlaybackMediaItemFactory
 import moe.ouom.neriplayer.data.model.playback.storage.PlayerLocalPlaybackResolution as LocalPlaybackReferenceResolution
 import moe.ouom.neriplayer.core.player.lifecycle.updateAudioOffloadPreferences
 import moe.ouom.neriplayer.data.model.playback.PlaybackAudioInfo
 import moe.ouom.neriplayer.data.model.playback.PlaybackAudioSource
+import moe.ouom.neriplayer.data.model.playback.deriveCodecLabel
 import moe.ouom.neriplayer.data.model.playback.PlayerEvent
 import moe.ouom.neriplayer.data.model.playback.SongUrlResult
 import moe.ouom.neriplayer.core.player.policy.audio.mergeLocalPlaybackAudioInfoWithRemoteQuality
@@ -61,14 +63,17 @@ import moe.ouom.neriplayer.core.player.prefetch.consumeGenericUrlPrefetch
 import moe.ouom.neriplayer.core.player.quality.effectiveBiliQuality
 import moe.ouom.neriplayer.core.player.quality.effectiveNeteaseQuality
 import moe.ouom.neriplayer.core.player.quality.effectiveYouTubeQuality
+import moe.ouom.neriplayer.core.player.quality.effectiveQqMusicQuality
 import moe.ouom.neriplayer.platform.netease.api.playback.parser.NeteasePlaybackResponseParser
 import moe.ouom.neriplayer.core.player.resolver.netease.tryResolveNeteaseAutoBiliSource
 import moe.ouom.neriplayer.core.player.resolver.netease.tryResolveNeteaseMatchedLocalSource
+import moe.ouom.neriplayer.core.player.resolver.netease.tryResolveQqMusicAutoBiliSource
 import moe.ouom.neriplayer.core.player.watchdog.configureActivePlaybackCandidates
 import moe.ouom.neriplayer.core.player.watchdog.currentPlaybackCandidate
 import moe.ouom.neriplayer.core.player.watchdog.resetPlaybackProgressAdvanceBaseline
 import moe.ouom.neriplayer.core.player.watchdog.schedulePlaybackStartupWatchdog
 import moe.ouom.neriplayer.data.model.bilibili.playback.BiliAudioStreamInfo
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicAudioStream
 import moe.ouom.neriplayer.data.model.bilibili.skip.BiliVideoSkipTarget
 import moe.ouom.neriplayer.platform.youtube.api.transport.extractYouTubeMusicVideoId
 import moe.ouom.neriplayer.data.model.SongItem
@@ -319,6 +324,11 @@ internal suspend fun PlayerManager.resolveSongUrl(
                 sideEffects = resolverSideEffects,
                 playbackRequestTokenOverride = playbackRequestTokenOverride
             )
+            PlaybackMediaItemFactory.isQqMusicSource(song) -> getQQMusicAudioUrl(
+                song = song,
+                suppressError = suppressError,
+                sideEffects = resolverSideEffects
+            )
             else -> getNeteaseSongUrl(
                 song = song,
                 suppressError = suppressError,
@@ -407,6 +417,8 @@ internal suspend fun PlayerManager.resolveShareableListenTogetherStreamUrls(
     val resolution = when {
         isYouTubeMusicTrack(song) -> resolveYouTubeListenTogetherShareableStreams(song)
         isBiliTrack(song) -> resolveBiliListenTogetherShareableStreams(song)
+        PlaybackMediaItemFactory.isQqMusicSource(song) ->
+            resolveQQMusicListenTogetherShareableStreams(song)
         else -> resolveNeteaseListenTogetherShareableStreams(song)
     }
     val trustedUrls = trustedListenTogetherStreamUrls(
@@ -417,6 +429,39 @@ internal suspend fun PlayerManager.resolveShareableListenTogetherStreamUrls(
     return ShareableListenTogetherStreamResolution(
         streamUrls = trustedUrls,
         isPreviewOnly = resolution.isPreviewOnly && trustedUrls.isEmpty()
+    )
+}
+
+private suspend fun PlayerManager.resolveQQMusicListenTogetherShareableStreams(
+    song: SongItem
+): ShareableListenTogetherStreamResolution = withContext(Dispatchers.IO) {
+    val songMid = song.audioId?.trim()?.takeIf(String::isNotBlank)
+        ?: return@withContext ShareableListenTogetherStreamResolution(emptyList(), false)
+    val quality = effectiveQqMusicQuality()
+    val stream = runCatching {
+        qqMusicClient.getPlaybackStream(
+            songMid = songMid,
+            mediaMid = song.subAudioId,
+            preferredQuality = quality
+        )
+    }.getOrNull() ?: return@withContext ShareableListenTogetherStreamResolution(
+        emptyList(),
+        false
+    )
+    val streamUrls = (listOf(stream.url) + stream.candidateUrls)
+        .filter(::isDirectStreamUrl)
+        .distinct()
+        .take(MAX_LISTEN_TOGETHER_QQ_MUSIC_STREAM_URL_CANDIDATES)
+        .map { streamUrl ->
+            decorateListenTogetherStreamUrl(
+                streamUrl = streamUrl,
+                source = PlaybackAudioSource.QQ_MUSIC,
+                qualityKey = stream.qualityKey
+            )
+        }
+    ShareableListenTogetherStreamResolution(
+        streamUrls = streamUrls,
+        isPreviewOnly = stream.isPreviewClip
     )
 }
 
@@ -1746,6 +1791,95 @@ private suspend fun PlayerManager.getNeteaseSongUrl(
         }
         SongUrlResult.Failure
     }
+}
+
+private suspend fun PlayerManager.getQQMusicAudioUrl(
+    song: SongItem,
+    suppressError: Boolean = false,
+    sideEffects: RefreshResolverSideEffects = RefreshResolverSideEffects()
+): SongUrlResult = withContext(Dispatchers.IO) {
+    val songMid = song.audioId?.trim()?.takeIf(String::isNotBlank)
+    if (songMid == null) {
+        if (!suppressError) {
+            sideEffects.emitError {
+                postPlayerEvent(
+                    PlayerEvent.ShowError(getLocalizedString(CoreCommonR.string.error_no_play_url))
+                )
+            }
+        }
+        return@withContext SongUrlResult.Failure
+    }
+    try {
+        val preferredQuality = effectiveQqMusicQuality()
+        val stream = qqMusicClient.getPlaybackStream(
+            songMid = songMid,
+            mediaMid = song.subAudioId,
+            preferredQuality = preferredQuality
+        )
+        if (stream.qualityKey != preferredQuality) {
+            NPLogger.w(
+                "NERI-PlayerManager",
+                "QQ Music stream quality fallback: mid=$songMid, preferred=$preferredQuality, resolved=${stream.qualityKey}"
+            )
+        }
+        val result = SongUrlResult.Success(
+            url = stream.url,
+            candidateUrls = stream.candidateUrls,
+            durationMs = song.durationMs.takeIf { it > 0L },
+            mimeType = stream.mimeType,
+            noticeMessage = if (stream.isPreviewClip) {
+                getLocalizedString(CoreCommonR.string.player_qq_music_preview_only)
+            } else {
+                null
+            },
+            expectedContentLength = stream.contentLength,
+            audioInfo = buildQqMusicPlaybackAudioInfo(stream) { getLocalizedString(it) },
+            representationIdentity = "qqmusic-$songMid-${stream.qualityKey}",
+            isPreviewClip = stream.isPreviewClip
+        )
+        if (stream.isPreviewClip && qqMusicAutoSourceSwitchEnabled) {
+            tryResolveQqMusicAutoBiliSource(song, sideEffects)?.let {
+                return@withContext it
+            }
+        }
+        return@withContext result
+    } catch (error: Exception) {
+        if (error is CancellationException) throw error
+        NPLogger.e("NERI-PlayerManager", "Failed to get QQ Music play url: mid=$songMid", error)
+        if (qqMusicAutoSourceSwitchEnabled) {
+            tryResolveQqMusicAutoBiliSource(song, sideEffects)?.let {
+                return@withContext it
+            }
+        }
+        if (!suppressError && isPlaybackNetworkUsable(application)) {
+            sideEffects.emitError {
+                postPlayerEvent(
+                    PlayerEvent.ShowError(
+                        getLocalizedString(
+                            CoreCommonR.string.player_playback_url_error_detail,
+                            error.message.orEmpty()
+                        )
+                    )
+                )
+            }
+        }
+        SongUrlResult.Failure
+    }
+}
+
+private fun buildQqMusicPlaybackAudioInfo(
+    stream: QQMusicAudioStream,
+    getLocalizedString: (Int) -> String
+): PlaybackAudioInfo {
+    val qualityKey = stream.qualityKey.trim().lowercase().ifBlank { "exhigh" }
+    return PlaybackAudioInfo(
+        source = PlaybackAudioSource.QQ_MUSIC,
+        qualityKey = qualityKey,
+        qualityLabel = qualityLabelForQqMusic(qualityKey, getLocalizedString),
+        qualityOptions = buildQqMusicQualityOptions(getLocalizedString),
+        codecLabel = deriveCodecLabel(stream.mimeType),
+        mimeType = stream.mimeType
+    )
 }
 
 private suspend fun PlayerManager.getBiliAudioUrl(

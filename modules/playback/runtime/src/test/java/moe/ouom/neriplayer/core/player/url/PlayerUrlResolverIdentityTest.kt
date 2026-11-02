@@ -15,6 +15,14 @@ class PlayerUrlResolverIdentityTest {
     private val localized: (Int) -> String = { "res:$it" }
 
     @Test
+    fun `qq music preview quality has a localized label`() {
+        assertEquals(
+            "res:${CoreCommonR.string.quality_preview}",
+            qualityLabelForQqMusic("preview", localized)
+        )
+    }
+
+    @Test
     fun `netease quality labels are localized for every known level`() {
         mapOf(
             "standard" to CoreCommonR.string.quality_standard,

@@ -23,6 +23,7 @@ internal object PlayerManagerPlaybackQualityPort : PlaybackQualityPort {
         val writers: Map<PlaybackAudioSource, suspend (String) -> Unit> = mapOf(
             PlaybackAudioSource.NETEASE to repository::setAudioQuality,
             PlaybackAudioSource.BILIBILI to repository::setBiliAudioQuality,
+            PlaybackAudioSource.QQ_MUSIC to repository::setQqMusicAudioQuality,
             PlaybackAudioSource.YOUTUBE_MUSIC to repository::setYouTubeAudioQuality
         )
         return writers.getValue(source)

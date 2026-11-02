@@ -85,12 +85,14 @@ internal data class AppPlaybackContinuitySettingsState(
 internal data class AppPlaybackSourcesSettingsState(
     val neteaseAutoSourceSwitch: Boolean,
     val neteaseLocalSourceFallback: Boolean,
+    val qqMusicAutoSourceSwitch: Boolean,
     val allowMixedPlayback: Boolean,
     val preemptAudioFocus: Boolean
 )
 
 internal data class AppDefaultAudioQualitySettingsState(
     val preferredQuality: String,
+    val qqMusicPreferredQuality: String,
     val youtubePreferredQuality: String,
     val biliPreferredQuality: String,
     val mobileDataFollowDefaultAudioQuality: Boolean
@@ -98,6 +100,7 @@ internal data class AppDefaultAudioQualitySettingsState(
 
 internal data class AppMobileAudioQualitySettingsState(
     val mobileDataNeteaseAudioQuality: String,
+    val mobileDataQqMusicAudioQuality: String,
     val mobileDataYouTubeAudioQuality: String,
     val mobileDataBiliAudioQuality: String
 )
@@ -280,29 +283,32 @@ private fun playbackSourcesSettingsFlow(repo: SettingsRepository): Flow<AppPlayb
     combine(
         repo.neteaseAutoSourceSwitchFlow,
         repo.neteaseLocalSourceFallbackFlow,
+        repo.qqMusicAutoSourceSwitchFlow,
         repo.allowMixedPlaybackFlow,
         repo.preemptAudioFocusFlow
-    ) { v0, v1, v2, v3 ->
-        AppPlaybackSourcesSettingsState(v0, v1, v2, v3)
+    ) { v0, v1, v2, v3, v4 ->
+        AppPlaybackSourcesSettingsState(v0, v1, v2, v3, v4)
     }
 
 private fun defaultAudioQualitySettingsFlow(repo: SettingsRepository): Flow<AppDefaultAudioQualitySettingsState> =
     combine(
         repo.audioQualityFlow,
+        repo.qqMusicAudioQualityFlow,
         repo.youtubeAudioQualityFlow,
         repo.biliAudioQualityFlow,
         repo.mobileDataFollowDefaultAudioQualityFlow
-    ) { v0, v1, v2, v3 ->
-        AppDefaultAudioQualitySettingsState(v0, v1, v2, v3)
+    ) { v0, v1, v2, v3, v4 ->
+        AppDefaultAudioQualitySettingsState(v0, v1, v2, v3, v4)
     }
 
 private fun mobileAudioQualitySettingsFlow(repo: SettingsRepository): Flow<AppMobileAudioQualitySettingsState> =
     combine(
         repo.mobileDataNeteaseAudioQualityFlow,
+        repo.mobileDataQqMusicAudioQualityFlow,
         repo.mobileDataYouTubeAudioQualityFlow,
         repo.mobileDataBiliAudioQualityFlow
-    ) { v0, v1, v2 ->
-        AppMobileAudioQualitySettingsState(v0, v1, v2)
+    ) { v0, v1, v2, v3 ->
+        AppMobileAudioQualitySettingsState(v0, v1, v2, v3)
     }
 
 private fun homeCardsSettingsFlow(repo: SettingsRepository): Flow<AppHomeCardsSettingsState> =
@@ -434,17 +440,20 @@ internal fun initialAppSettingsRouteState(
         playbackSources = AppPlaybackSourcesSettingsState(
             neteaseAutoSourceSwitch = startupPlaybackPreferences.neteaseAutoSourceSwitch,
             neteaseLocalSourceFallback = startupPlaybackPreferences.neteaseLocalSourceFallback,
+            qqMusicAutoSourceSwitch = startupPlaybackPreferences.qqMusicAutoSourceSwitch,
             allowMixedPlayback = false,
             preemptAudioFocus = startupPlaybackPreferences.preemptAudioFocus
         ),
         defaultAudioQuality = AppDefaultAudioQualitySettingsState(
             preferredQuality = "exhigh",
+            qqMusicPreferredQuality = startupPlaybackPreferences.qqMusicAudioQuality,
             youtubePreferredQuality = "high",
             biliPreferredQuality = "high",
             mobileDataFollowDefaultAudioQuality = startupPlaybackPreferences.mobileDataFollowDefaultAudioQuality
         ),
         mobileAudioQuality = AppMobileAudioQualitySettingsState(
             mobileDataNeteaseAudioQuality = startupPlaybackPreferences.mobileDataNeteaseAudioQuality,
+            mobileDataQqMusicAudioQuality = startupPlaybackPreferences.mobileDataQqMusicAudioQuality,
             mobileDataYouTubeAudioQuality = startupPlaybackPreferences.mobileDataYouTubeAudioQuality,
             mobileDataBiliAudioQuality = startupPlaybackPreferences.mobileDataBiliAudioQuality
         ),

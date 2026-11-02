@@ -3,6 +3,7 @@ package moe.ouom.neriplayer.platform.youtube.api.challenge
 import android.app.Application
 import android.webkit.WebView
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.webkit.WebViewAssetLoader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -37,12 +38,17 @@ class YouTubeEjsWebViewFallbackSolverTest {
     fun `a WebView created on main while the caller is cancelled is destroyed`() = runTest {
         val created = mutableListOf<WebView>()
         lateinit var caller: Job
-        val solver = YouTubeEjsWebViewFallbackSolver(RuntimeEnvironment.getApplication()) { context ->
-            WebView(context).also { webView ->
-                created += webView
-                caller.cancel()
-            }
-        }
+        val application = RuntimeEnvironment.getApplication()
+        val solver = YouTubeEjsWebViewFallbackSolver(
+            context = application,
+            webViewFactory = { context ->
+                WebView(context).also { webView ->
+                    created += webView
+                    caller.cancel()
+                }
+            },
+            assetLoaderFactory = { _, _ -> WebViewAssetLoader.Builder().build() }
+        )
 
         caller = launch { solver.warm(PLAYER_JS_URL, "var player = {};") }
         caller.join()

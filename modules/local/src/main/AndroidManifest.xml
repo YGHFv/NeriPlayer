@@ -25,5 +25,13 @@
                 <action android:name="moe.ouom.neriplayer.action.CLEAR_WEBVIEW_LOGIN_STATE" />
             </intent-filter>
         </receiver>
+        <receiver
+            android:name="moe.ouom.neriplayer.data.auth.web.QQMusicWebViewLoginStateClearReceiver"
+            android:exported="false"
+            android:process=":qq_music_login">
+            <intent-filter>
+                <action android:name="moe.ouom.neriplayer.action.CLEAR_WEBVIEW_LOGIN_STATE" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

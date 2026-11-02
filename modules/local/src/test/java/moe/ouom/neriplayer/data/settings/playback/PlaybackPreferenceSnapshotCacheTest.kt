@@ -53,6 +53,24 @@ class PlaybackPreferenceSnapshotCacheTest {
     }
 
     @Test
+    fun `QQ Music quality and auto source choices round trip through the startup cache`() {
+        persistPlaybackPreferenceSnapshot(
+            context,
+            PlaybackPreferenceSnapshot(
+                qqMusicAudioQuality = "lossless",
+                mobileDataQqMusicAudioQuality = "exhigh",
+                qqMusicAutoSourceSwitch = true
+            )
+        )
+
+        val cached = readPlaybackPreferenceSnapshotSync(context)
+
+        assertEquals("lossless", cached.qqMusicAudioQuality)
+        assertEquals("exhigh", cached.mobileDataQqMusicAudioQuality)
+        assertTrue(cached.qqMusicAutoSourceSwitch)
+    }
+
+    @Test
     fun `synchronous read without a cache returns defaults and warms it from settings`() = runTest {
         IsolatedSettingsDataStore.withEmptySettings(
             context,

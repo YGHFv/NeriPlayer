@@ -20,6 +20,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.ouom.neriplayer.common.R as CoreCommonR
+import moe.ouom.neriplayer.common.logging.playbackLogReference
 import moe.ouom.neriplayer.data.model.bilibili.video.VideoBasicInfo
 import moe.ouom.neriplayer.platform.bilibili.playback.resolver.buildBiliPartSong
 import moe.ouom.neriplayer.common.logging.NPLogger
@@ -1540,7 +1541,10 @@ internal fun PlayerManager.seekToImpl(
 private fun PlayerManager.logSeekRequested(positionMs: Long, commandSource: PlaybackCommandSource) {
     NPLogger.d(
         "NERI-PlayerManager",
-        "seekTo requested: positionMs=$positionMs, source=$commandSource, currentSong=${_currentSongFlow.value?.name}, currentUrl=${_currentMediaUrl.value}, stack=[${debugStackHint()}]"
+        "seekTo requested: positionMs=$positionMs, source=$commandSource, " +
+            "currentSong=${_currentSongFlow.value?.name}, " +
+            "currentUrl=${playbackLogReference(_currentMediaUrl.value)}, " +
+            "stack=[${debugStackHint()}]"
     )
 }
 

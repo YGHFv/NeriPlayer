@@ -36,7 +36,8 @@ private const val COOKIE_EXPIRED = "; Expires=Thu, 01 Jan 1970 00:00:00 GMT; " +
 enum class WebLoginPlatform {
     NETEASE,
     BILI,
-    YOUTUBE
+    YOUTUBE,
+    QQ_MUSIC
 }
 
 private data class WebViewLoginStateClearTarget(
@@ -62,6 +63,10 @@ private val webViewLoginStateClearTargets = listOf(
     WebViewLoginStateClearTarget(
         platform = WebLoginPlatform.YOUTUBE,
         receiverClass = YouTubeWebViewLoginStateClearReceiver::class.java
+    ),
+    WebViewLoginStateClearTarget(
+        platform = WebLoginPlatform.QQ_MUSIC,
+        receiverClass = QQMusicWebViewLoginStateClearReceiver::class.java
     )
 )
 
@@ -129,6 +134,30 @@ private val webViewCookieScopes = mapOf(
             "https://www.youtube.com",
             "https://m.youtube.com",
             "https://youtube.com"
+        )
+    ),
+    WebLoginPlatform.QQ_MUSIC to WebViewCookieScope(
+        urls = listOf(
+            "https://y.qq.com",
+            "https://music.qq.com",
+            "https://qq.com",
+            "https://ptlogin2.qq.com",
+            "https://graph.qq.com",
+            "https://wx.qq.com",
+            "https://weixin.qq.com"
+        ),
+        domains = listOf(
+            ".qq.com",
+            ".y.qq.com"
+        ),
+        storageOrigins = listOf(
+            "https://y.qq.com",
+            "https://music.qq.com",
+            "https://qq.com",
+            "https://ptlogin2.qq.com",
+            "https://graph.qq.com",
+            "https://wx.qq.com",
+            "https://weixin.qq.com"
         )
     )
 )

@@ -1065,6 +1065,7 @@ internal object DownloadExecutionRoomStore {
                         put("neteaseQuality", quality.neteaseQuality)
                         put("youtubeQuality", quality.youtubeQuality)
                         put("biliQuality", quality.biliQuality)
+                        put("qqMusicQuality", quality.qqMusicQuality)
                     }
                 )
             }
@@ -1158,7 +1159,8 @@ internal object DownloadExecutionRoomStore {
                     DownloadAudioQualitySelection.normalized(
                         neteaseQuality = quality.optString("neteaseQuality"),
                         youtubeQuality = quality.optString("youtubeQuality"),
-                        biliQuality = quality.optString("biliQuality")
+                        biliQuality = quality.optString("biliQuality"),
+                        qqMusicQuality = quality.optString("qqMusicQuality")
                     )
                 },
                 batchId = root.optString("batchId").takeIf(String::isNotBlank) ?: entity.batchId,

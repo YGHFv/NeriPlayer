@@ -56,6 +56,8 @@ import moe.ouom.neriplayer.core.player.PlayerManager.neteaseClient
 import moe.ouom.neriplayer.data.model.auth.SavedCookieAuthState
 import moe.ouom.neriplayer.data.model.NeteaseArtistSummary
 import moe.ouom.neriplayer.data.model.SongItem
+import moe.ouom.neriplayer.data.model.ltw.track.ListenTogetherChannels
+import moe.ouom.neriplayer.data.model.music.SongSearchInfo
 import moe.ouom.neriplayer.platform.netease.mapping.parseNeteaseSongDetail
 import moe.ouom.neriplayer.platform.youtube.config.YouTubeFeatureGate
 import moe.ouom.neriplayer.platform.youtube.api.transport.buildYouTubeMusicMediaUri
@@ -67,6 +69,7 @@ import org.json.JSONObject
 
 private const val TAG = "NERI-ExploreVM"
 private const val NETEASE_SEARCH_PAGE_SIZE = 30
+private const val QQ_MUSIC_SEARCH_PAGE_SIZE = 20
 private const val YOUTUBE_MUSIC_SEARCH_LIMIT = 30
 private const val BILI_RESOURCE_TYPE_COLLECTION = 21
 
@@ -106,6 +109,7 @@ val TAG_TO_API_CATEGORY = mapOf(
 enum class SearchSource {
     YOUTUBE_MUSIC,
     NETEASE,
+    QQ_MUSIC,
     BILIBILI,
     LINK_RECOGNITION
 }
@@ -193,6 +197,7 @@ data class ExploreUiState(
     val selectedNeteaseSearchType: NeteaseExploreSearchType = NeteaseExploreSearchType.SONG,
     val selectedYouTubeMusicSearchType: YouTubeExploreSearchType = YouTubeExploreSearchType.SONG,
     val isNeteaseLoggedIn: Boolean = false,
+    val isQQMusicLoggedIn: Boolean = false,
     val ytMusicPlaylists: List<YouTubeMusicPlaylist> = emptyList(),
     val ytMusicPlaylistsLoading: Boolean = false,
     val ytMusicPlaylistsError: UiText? = null
@@ -371,6 +376,13 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
             }
         }
         viewModelScope.launch {
+            AppContainer.qqMusicAuthRepo.authFlow.collect { auth ->
+                _uiState.value = _uiState.value.copy(
+                    isQQMusicLoggedIn = auth.hasLoginCookies()
+                )
+            }
+        }
+        viewModelScope.launch {
             AppContainer.settingsRepo.youtubeEnabledFlow.collect { enabled ->
                 youtubeEnabled = enabled
                 if (!enabled) {
@@ -479,6 +491,7 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         )
         when (source) {
             SearchSource.NETEASE -> searchNetease(apiKeyword, matchQuery, requestVersion)
+            SearchSource.QQ_MUSIC -> searchQQMusic(apiKeyword, matchQuery, requestVersion)
             SearchSource.BILIBILI -> searchBilibili(apiKeyword, matchQuery, requestVersion)
             SearchSource.YOUTUBE_MUSIC -> searchYouTubeMusic(apiKeyword, matchQuery, requestVersion)
             SearchSource.LINK_RECOGNITION -> searchRecognizedLink(apiKeyword, requestVersion)
@@ -526,6 +539,11 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
                         type = neteaseType
                     )
                     SearchSource.BILIBILI -> fetchBilibiliSearchPage(
+                        keyword = keyword,
+                        matchQuery = matchQuery,
+                        page = nextPage
+                    )
+                    SearchSource.QQ_MUSIC -> fetchQQMusicSearchPage(
                         keyword = keyword,
                         matchQuery = matchQuery,
                         page = nextPage
@@ -614,6 +632,69 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
                 }
             }
         }
+    }
+
+    private fun searchQQMusic(keyword: String, matchQuery: String, requestVersion: Long) {
+        searchJob = viewModelScope.launch {
+            try {
+                val result = fetchQQMusicSearchPage(keyword, matchQuery, page = 1)
+                NPLogger.d(
+                    TAG,
+                    "search QQ Music success: request=$requestVersion, keyword=$keyword, " +
+                        "count=${result.items.size}, hasMore=${result.hasMore}"
+                )
+                updateSearchStateIfCurrent(requestVersion, SearchSource.QQ_MUSIC) {
+                    it.copy(
+                        searching = false,
+                        searchError = null,
+                        searchLoadMoreError = null,
+                        searchResults = result.songs,
+                        searchItems = result.items,
+                        searchPage = result.page,
+                        searchHasMore = result.hasMore
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                NPLogger.e(
+                    TAG,
+                    "search QQ Music failed: request=$requestVersion, keyword=$keyword",
+                    e
+                )
+                updateSearchStateIfCurrent(requestVersion, SearchSource.QQ_MUSIC) {
+                    it.copy(
+                        searching = false,
+                        searchError = searchErrorMessage(SearchSource.QQ_MUSIC, e),
+                        searchResults = emptyList(),
+                        searchItems = emptyList(),
+                        searchHasMore = false,
+                        searchLoadingMore = false,
+                        searchLoadMoreError = null,
+                        searchPage = 0
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun fetchQQMusicSearchPage(
+        keyword: String,
+        matchQuery: String,
+        page: Int
+    ): ExploreSearchFetchResult {
+        val results = withContext(Dispatchers.IO) {
+            AppContainer.qqMusicSearchApi.search(keyword = keyword, page = page)
+        }
+        val songs = rankExploreSongSearchResults(
+            query = matchQuery,
+            songs = results.map(SongSearchInfo::toQQMusicSongItem)
+        )
+        return ExploreSearchFetchResult(
+            items = songs.map(ExploreSearchResult::Song),
+            page = page,
+            hasMore = results.size >= QQ_MUSIC_SEARCH_PAGE_SIZE
+        )
     }
 
     private suspend fun fetchBilibiliSearchPage(
@@ -1385,6 +1466,7 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         val fallback = error.message ?: feedbackText(CoreCommonR.string.github_sync_failed_message)
         return when (source) {
             SearchSource.NETEASE -> feedbackText(CoreCommonR.string.error_netease_search, fallback)
+            SearchSource.QQ_MUSIC -> feedbackText(CoreCommonR.string.error_qq_music_search, fallback)
             SearchSource.BILIBILI -> feedbackText(CoreCommonR.string.error_bilibili_search, fallback)
             SearchSource.YOUTUBE_MUSIC -> feedbackText(CoreCommonR.string.error_youtube_search, fallback)
             SearchSource.LINK_RECOGNITION -> feedbackText(CoreCommonR.string.error_link_recognition, fallback)
@@ -1448,6 +1530,45 @@ private fun JSONObject.linkedNeteaseArtistPicUrl(): String? {
         .ifBlank { optString("img1v1Url", "") }
         .replaceFirst("http://", "https://")
         .takeIf { it.isNotBlank() }
+}
+
+internal fun SongSearchInfo.toQQMusicSongItem(): SongItem {
+    val songMid = id.trim()
+    return SongItem(
+        id = platformId?.trim()?.toLongOrNull()?.takeIf { it > 0L }
+            ?: stableQQMusicSearchId(songMid),
+        name = songName,
+        artist = singer,
+        album = albumName.orEmpty(),
+        albumId = 0L,
+        durationMs = parseSearchDurationMs(duration),
+        coverUrl = coverUrl,
+        originalName = songName,
+        originalArtist = singer,
+        originalCoverUrl = coverUrl,
+        channelId = ListenTogetherChannels.QQ_MUSIC,
+        audioId = songMid,
+        subAudioId = mediaId?.trim()?.takeIf(String::isNotBlank)
+    )
+}
+
+private fun parseSearchDurationMs(duration: String): Long {
+    val parts = duration.trim().split(':')
+    if (parts.size !in 2..3) return 0L
+    val seconds = parts.fold(0L) { total, part ->
+        val value = part.toLongOrNull() ?: return 0L
+        total * 60L + value
+    }
+    return (seconds * 1_000L).coerceAtLeast(0L)
+}
+
+private fun stableQQMusicSearchId(songMid: String): Long {
+    var hash = 0xcbf29ce484222325UL
+    songMid.toByteArray(Charsets.UTF_8).forEach { byte ->
+        hash = hash xor byte.toUByte().toULong()
+        hash *= 0x100000001b3UL
+    }
+    return (hash and 0x7fff_ffff_ffff_ffffUL).toLong().coerceAtLeast(1L)
 }
 
 /** Bilibili 搜索结果到通用 SongItem 的转换器 */

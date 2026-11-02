@@ -11,6 +11,7 @@ import android.util.Base64
 import java.io.IOException
 import moe.ouom.neriplayer.core.di.AppContainer
 import moe.ouom.neriplayer.network.http.parsing.parseRawCookieText
+import moe.ouom.neriplayer.data.model.qqmusic.auth.QQMusicAuthBundle
 import moe.ouom.neriplayer.data.model.youtube.auth.YouTubeAuthBundle
 
 class DebugCookieImportReceiver : BroadcastReceiver() {
@@ -18,6 +19,7 @@ class DebugCookieImportReceiver : BroadcastReceiver() {
         try {
             when (intent.action) {
                 ACTION_IMPORT_AUTH -> handleImport(intent)
+                ACTION_EXPORT_AUTH -> handleExport(intent)
                 ACTION_CLEAR_AUTH -> handleClear(intent)
                 else -> {
                     resultCode = Activity.RESULT_CANCELED
@@ -27,6 +29,26 @@ class DebugCookieImportReceiver : BroadcastReceiver() {
         } catch (_: IOException) {
             fail(PERSISTENCE_FAILURE)
         }
+    }
+
+    private fun handleExport(intent: Intent) {
+        val platform = intent.getStringExtra(EXTRA_PLATFORM)
+            ?.trim()
+            ?.lowercase()
+            .orEmpty()
+        val cookies = when (platform) {
+            PLATFORM_QQ_MUSIC -> AppContainer.qqMusicAuthRepo.getAuthOnce().cookies
+            else -> {
+                fail("unsupported export platform: $platform")
+                return
+            }
+        }
+        resultCode = Activity.RESULT_OK
+        resultData = Base64.encodeToString(
+            cookies.entries.joinToString("; ") { (key, value) -> "$key=$value" }
+                .toByteArray(Charsets.UTF_8),
+            Base64.NO_WRAP
+        )
     }
 
     private fun handleImport(intent: Intent) {
@@ -80,6 +102,19 @@ class DebugCookieImportReceiver : BroadcastReceiver() {
                 succeed(platform, normalized.cookies.keys)
             }
 
+            PLATFORM_QQ_MUSIC -> {
+                val normalized = QQMusicAuthBundle(
+                    cookies = cookies,
+                    savedAt = System.currentTimeMillis()
+                ).normalized()
+                if (!normalized.hasLoginCookies()) {
+                    fail("invalid qq music cookies")
+                    return
+                }
+                AppContainer.qqMusicAuthRepo.saveCookies(normalized.cookies)
+                succeed(platform, normalized.cookies.keys)
+            }
+
             else -> fail("unknown platform: $platform")
         }
     }
@@ -94,10 +129,12 @@ class DebugCookieImportReceiver : BroadcastReceiver() {
             PLATFORM_BILI -> AppContainer.biliCookieRepo.clear()
             PLATFORM_NETEASE -> AppContainer.neteaseCookieRepo.clear()
             PLATFORM_YOUTUBE -> AppContainer.youtubeAuthRepo.clear()
+            PLATFORM_QQ_MUSIC -> AppContainer.qqMusicAuthRepo.clear()
             PLATFORM_ALL, "" -> {
                 AppContainer.biliCookieRepo.clear()
                 AppContainer.neteaseCookieRepo.clear()
                 AppContainer.youtubeAuthRepo.clear()
+                AppContainer.qqMusicAuthRepo.clear()
             }
 
             else -> {
@@ -133,6 +170,7 @@ class DebugCookieImportReceiver : BroadcastReceiver() {
         private const val PERSISTENCE_FAILURE = "failed to persist auth"
 
         const val ACTION_IMPORT_AUTH = "moe.ouom.neriplayer.debug.IMPORT_AUTH"
+        const val ACTION_EXPORT_AUTH = "moe.ouom.neriplayer.debug.EXPORT_AUTH"
         const val ACTION_CLEAR_AUTH = "moe.ouom.neriplayer.debug.CLEAR_AUTH"
 
         const val EXTRA_PLATFORM = "platform"
@@ -142,6 +180,7 @@ class DebugCookieImportReceiver : BroadcastReceiver() {
         const val PLATFORM_BILI = "bili"
         const val PLATFORM_NETEASE = "netease"
         const val PLATFORM_YOUTUBE = "youtube"
+        const val PLATFORM_QQ_MUSIC = "qq"
         const val PLATFORM_ALL = "all"
     }
 }

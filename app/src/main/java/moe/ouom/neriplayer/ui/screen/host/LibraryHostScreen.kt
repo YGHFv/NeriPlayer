@@ -64,6 +64,7 @@ import moe.ouom.neriplayer.ui.screen.playlist.LocalPlaylistDetailScreen
 import moe.ouom.neriplayer.ui.screen.playlist.NeteaseAlbumDetailScreen
 import moe.ouom.neriplayer.ui.screen.playlist.NeteasePlaylistDetailScreen
 import moe.ouom.neriplayer.ui.screen.playlist.BiliPlaylistDetailScreen
+import moe.ouom.neriplayer.ui.screen.playlist.QQMusicPlaylistDetailScreen
 import moe.ouom.neriplayer.ui.screen.playlist.YouTubeMusicPlaylistDetailScreen
 import moe.ouom.neriplayer.ui.screen.tab.library.LibraryTab
 import moe.ouom.neriplayer.ui.screen.tab.library.LibraryScreen
@@ -74,6 +75,7 @@ import moe.ouom.neriplayer.ui.navigation.biliUploaderSourceRoute
 import moe.ouom.neriplayer.ui.viewmodel.tab.AlbumSummary
 import moe.ouom.neriplayer.ui.viewmodel.tab.PlaylistSummary
 import moe.ouom.neriplayer.ui.viewmodel.tab.BiliPlaylist
+import moe.ouom.neriplayer.ui.viewmodel.tab.QQMusicPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.YouTubeMusicPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.playlist.BiliVideoItem
 import moe.ouom.neriplayer.data.model.SongItem
@@ -101,6 +103,7 @@ import moe.ouom.neriplayer.ui.util.toSaveMap
 import moe.ouom.neriplayer.ui.util.restoreBiliPlaylist
 import moe.ouom.neriplayer.ui.util.restoreAlbumSummary
 import moe.ouom.neriplayer.ui.util.restorePlaylistSummary
+import moe.ouom.neriplayer.ui.util.restoreQQMusicPlaylist
 import moe.ouom.neriplayer.ui.util.restoreYouTubeMusicPlaylist
 import moe.ouom.neriplayer.util.media.CoverArtColorCache
 import moe.ouom.neriplayer.platform.subsonic.repository.ServerAlbum as MusicServerAlbum
@@ -190,6 +193,13 @@ sealed class LibrarySelectedItem : Parcelable {
         override fun saveState() = hashMapOf(SAVED_TYPE_KEY to "bili", "playlist" to playlist.toSaveMap())
     }
     @Parcelize
+    data class QqMusic(val playlist: QQMusicPlaylist) : LibrarySelectedItem() {
+        override fun saveState() = hashMapOf(
+            SAVED_TYPE_KEY to "qqmusic",
+            "playlist" to playlist.toSaveMap()
+        )
+    }
+    @Parcelize
     data class YouTubeMusic(val playlist: YouTubeMusicPlaylist) : LibrarySelectedItem() {
         override fun saveState() = hashMapOf(SAVED_TYPE_KEY to "ytmusic", "playlist" to playlist.toSaveMap())
     }
@@ -270,7 +280,8 @@ private enum class LibraryScrollSource {
     NeteasePlaylist,
     NeteaseAlbum,
     YouTubeMusic,
-    Bili
+    Bili,
+    QqMusic
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -445,6 +456,7 @@ fun LibraryHostScreen(
         LibraryScrollSource.NeteaseAlbum -> neteaseAlbumState
         LibraryScrollSource.YouTubeMusic -> youtubeMusicListState
         LibraryScrollSource.Bili -> biliListState
+        LibraryScrollSource.QqMusic -> qqMusicListState
     }
 
     fun captureLibraryScrollPosition(source: LibraryScrollSource) {
@@ -724,6 +736,23 @@ fun LibraryHostScreen(
                                     )
                                 }
                             },
+                            onQqMusicPlaylistClick = { playlist ->
+                                skipDetailCloseAnimation = false
+                                captureLibraryScrollPosition(LibraryScrollSource.QqMusic)
+                                openAfterNeteaseCoverWarmup(
+                                    playlist.coverUrl,
+                                    LibrarySelectedItem.QqMusic(playlist)
+                                )
+                                AppContainer.launchBackgroundIo {
+                                    AppContainer.playlistUsageRepo.recordOpen(
+                                        id = playlist.id,
+                                        name = playlist.title,
+                                        picUrl = playlist.coverUrl,
+                                        trackCount = playlist.trackCount,
+                                        source = "qqMusic"
+                                    )
+                                }
+                            },
                             onOpenRecent = onOpenRecent,
                             onOpenStats = onOpenStats
                         )
@@ -940,6 +969,14 @@ fun LibraryHostScreen(
                                     offlineMode = offlineMode
                                 )
                         }
+                        is LibrarySelectedItem.QqMusic -> {
+                            QQMusicPlaylistDetailScreen(
+                                playlist = current.playlist,
+                                onBack = { closeSelectedDetail() },
+                                onSongClick = onSongClick,
+                                offlineMode = offlineMode
+                            )
+                        }
                         }
                     }
                 }
@@ -964,6 +1001,9 @@ private val librarySelectedItemRestorers: Map<String, (Map<String, Any?>) -> Lib
     "neteaseArtist" to { saved -> saved.savedNeteaseArtist()?.let(LibrarySelectedItem::NeteaseArtist) },
     "neteaseArtistAlbum" to ::restoreNeteaseArtistAlbumItem,
     "bili" to { saved -> restoreBiliPlaylist(saved.savedMap("playlist"))?.let(LibrarySelectedItem::Bili) },
+    "qqmusic" to { saved ->
+        restoreQQMusicPlaylist(saved.savedMap("playlist"))?.let(LibrarySelectedItem::QqMusic)
+    },
     "ytmusic" to { saved -> restoreYouTubeMusicPlaylist(saved.savedMap("playlist"))?.let(LibrarySelectedItem::YouTubeMusic) },
     "biliArtist" to ::restoreBiliUploaderItem,
     "youtubeArtist" to ::restoreYouTubeCreatorItem

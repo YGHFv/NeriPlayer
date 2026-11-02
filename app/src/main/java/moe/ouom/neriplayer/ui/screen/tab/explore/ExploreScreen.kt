@@ -205,17 +205,24 @@ internal fun exploreSearchSourceDisplayOrder(
     youtubeEnabled: Boolean
 ): List<SearchSource> {
     return if (!youtubeEnabled) {
-        listOf(SearchSource.NETEASE, SearchSource.BILIBILI, SearchSource.LINK_RECOGNITION)
+        listOf(
+            SearchSource.NETEASE,
+            SearchSource.QQ_MUSIC,
+            SearchSource.BILIBILI,
+            SearchSource.LINK_RECOGNITION
+        )
     } else if (isInternational) {
         listOf(
             SearchSource.YOUTUBE_MUSIC,
             SearchSource.NETEASE,
+            SearchSource.QQ_MUSIC,
             SearchSource.BILIBILI,
             SearchSource.LINK_RECOGNITION
         )
     } else {
         listOf(
             SearchSource.NETEASE,
+            SearchSource.QQ_MUSIC,
             SearchSource.BILIBILI,
             SearchSource.YOUTUBE_MUSIC,
             SearchSource.LINK_RECOGNITION
@@ -323,6 +330,7 @@ private fun searchSourceLabel(source: SearchSource): String {
     return when (source) {
         SearchSource.YOUTUBE_MUSIC -> stringResource(CoreCommonR.string.explore_tab_youtube)
         SearchSource.NETEASE -> stringResource(AppR.string.platform_netease_short)
+        SearchSource.QQ_MUSIC -> stringResource(AppR.string.qq_music_name)
         SearchSource.BILIBILI -> stringResource(AppR.string.platform_bilibili)
         SearchSource.LINK_RECOGNITION -> stringResource(CoreCommonR.string.explore_tab_links)
     }
@@ -780,6 +788,9 @@ fun ExploreScreen(
                                 ui.selectedSearchSource == SearchSource.NETEASE && !ui.isNeteaseLoggedIn -> {
                                     Text(stringResource(CoreCommonR.string.netease_login_required_search_placeholder))
                                 }
+                                ui.selectedSearchSource == SearchSource.QQ_MUSIC -> {
+                                    Text(stringResource(AppR.string.qq_music_search_placeholder))
+                                }
                                 cleanSearchField -> Text(searchFieldLabel)
                             }
                         },
@@ -834,6 +845,14 @@ fun ExploreScreen(
                         Text(
                             text = stringResource(CoreCommonR.string.netease_login_required_search),
                             color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    if (ui.selectedSearchSource == SearchSource.QQ_MUSIC && !ui.isQQMusicLoggedIn) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = stringResource(AppR.string.qq_music_explore_login_hint),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -1141,6 +1160,14 @@ fun ExploreScreen(
                         SearchSource.BILIBILI -> {
                             Box(Modifier.fillMaxSize(), Alignment.Center) {
                                 Text(stringResource(AppR.string.explore_bili_desc), style = MaterialTheme.typography.bodyLarge)
+                            }
+                        }
+                        SearchSource.QQ_MUSIC -> {
+                            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                                Text(
+                                    text = stringResource(AppR.string.qq_music_explore_hint),
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
                             }
                         }
                         SearchSource.YOUTUBE_MUSIC -> {

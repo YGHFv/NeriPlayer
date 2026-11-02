@@ -28,6 +28,7 @@ class ExploreScreenYouTubeGateTest {
         assertEquals(
             listOf(
                 SearchSource.NETEASE,
+                SearchSource.QQ_MUSIC,
                 SearchSource.BILIBILI,
                 SearchSource.LINK_RECOGNITION
             ),

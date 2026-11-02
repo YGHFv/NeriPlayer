@@ -12,6 +12,7 @@ import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsAccountAuthContro
 import moe.ouom.neriplayer.ui.screen.tab.settings.auth.SettingsAuthDialogState
 import moe.ouom.neriplayer.ui.viewmodel.auth.BiliAuthEvent
 import moe.ouom.neriplayer.ui.viewmodel.auth.BiliAuthViewModel
+import moe.ouom.neriplayer.ui.viewmodel.auth.QQMusicAuthViewModel
 import moe.ouom.neriplayer.ui.viewmodel.auth.YouTubeAuthEvent
 import moe.ouom.neriplayer.ui.viewmodel.auth.YouTubeAuthViewModel
 import moe.ouom.neriplayer.ui.viewmodel.debug.NeteaseAuthEvent
@@ -33,12 +34,16 @@ class AuthFeedbackLocaleTest {
         val netease = mock(NeteaseAuthViewModel::class.java)
         val bili = mock(BiliAuthViewModel::class.java)
         val youtube = mock(YouTubeAuthViewModel::class.java)
+        val qqMusic = mock(QQMusicAuthViewModel::class.java)
         val dialogs = SettingsAuthDialogState(
-            mutableIntStateOf(1), mutableIntStateOf(2), mutableIntStateOf(1)
+            mutableIntStateOf(1),
+            mutableIntStateOf(2),
+            mutableIntStateOf(1),
+            mutableIntStateOf(0)
         )
         var retained: UiText? = null
         val controller = SettingsAccountAuthController(
-            netease, bili, youtube, dialogs,
+            netease, bili, youtube, qqMusic, dialogs,
             mutableStateOf<(UiText?) -> Unit>({ retained = it })
         )
         controller.openNeteaseAtTab(2)
@@ -57,7 +62,7 @@ class AuthFeedbackLocaleTest {
             assertTrue(dialogs.showNeteaseSheet)
             assertEquals(2, dialogs.neteaseTab.intValue)
         }
-        verifyNoInteractions(netease, bili, youtube)
+        verifyNoInteractions(netease, bili, youtube, qqMusic)
     }
 
     private fun resources(language: String): Resources {

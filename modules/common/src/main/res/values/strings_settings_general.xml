@@ -308,6 +308,7 @@
     <string name="settings_download_netease_audio_quality">网易云下载音质</string>
     <string name="settings_download_youtube_audio_quality">YouTube 下载音质</string>
     <string name="settings_download_bili_audio_quality">哔哩哔哩下载音质</string>
+    <string name="settings_download_qq_music_audio_quality">QQ 音乐下载音质</string>
     <string name="settings_download_parallelism">下载线程数量</string>
     <string name="settings_download_parallelism_desc">控制同时下载的歌曲任务数量，最多并行 8 个</string>
     <string name="settings_download_parallelism_current">当前：%1$d 个，最多 %2$d 个</string>

@@ -468,6 +468,16 @@ internal object AudioDownloadTransferPolicy {
         return isYouTubeMusic && shouldRefreshYouTubeDownloadSourceOnFailure(error)
     }
 
+    internal fun shouldRetryQQMusicDownloadFailure(error: Throwable): Boolean {
+        val statusCode = extractYouTubeDownloadHttpStatus(error) ?: return false
+        return statusCode == 401 ||
+            statusCode == 403 ||
+            statusCode == 404 ||
+            statusCode == 410 ||
+            statusCode == 416 ||
+            isTransientHttpStatusCode(statusCode)
+    }
+
     internal fun shouldRefreshYouTubeDownloadSourceOnFailure(error: Throwable): Boolean {
         val statusCode = extractYouTubeDownloadHttpStatus(error) ?: return false
         return isRefreshableYouTubeDownloadStatusCode(statusCode)

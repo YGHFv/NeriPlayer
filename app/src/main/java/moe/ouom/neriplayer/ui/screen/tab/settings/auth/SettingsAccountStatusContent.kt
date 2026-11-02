@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.map
 import moe.ouom.neriplayer.common.R as CoreCommonR
 import moe.ouom.neriplayer.core.di.AppContainer
 import moe.ouom.neriplayer.data.model.auth.SavedCookieAuthState
+import moe.ouom.neriplayer.data.model.qqmusic.auth.QQMusicAuthBundle
 import moe.ouom.neriplayer.data.model.youtube.auth.YouTubeAuthBundle
 import moe.ouom.neriplayer.data.model.youtube.auth.YouTubeAuthState
 import moe.ouom.neriplayer.platform.youtube.config.YouTubeFeatureGate
@@ -63,10 +64,12 @@ internal fun SettingsLoginExpandedContent(
 ) {
     val biliVm = controller.biliVm
     val youtubeVm = controller.youtubeVm
+    val qqMusicVm = controller.qqMusicVm
     val neteaseVm = controller.neteaseVm
     val bili by biliVm.uiState.collectAsStateWithLifecycleCompat()
     val youtube by youtubeVm.uiState.collectAsStateWithLifecycleCompat()
     val netease by neteaseVm.uiState.collectAsStateWithLifecycleCompat()
+    val qqMusic by qqMusicVm.uiState.collectAsStateWithLifecycleCompat()
     val biliAuthorizationFlow = remember {
         AppContainer.biliCookieRepo.cookieFlow.map { cookies ->
             SettingsAccountAuthorizationSnapshot(cookies)
@@ -82,11 +85,18 @@ internal fun SettingsLoginExpandedContent(
             SettingsYouTubeAccountAuthorizationSnapshot(auth)
         }.distinctUntilChanged()
     }
+    val qqMusicAuthorizationFlow = remember {
+        AppContainer.qqMusicAuthRepo.authFlow.map { auth ->
+            SettingsQQMusicAccountAuthorizationSnapshot(auth)
+        }.distinctUntilChanged()
+    }
     val emptyAuthorization = remember { SettingsAccountAuthorizationSnapshot(emptyMap()) }
     val emptyYouTubeAuthorization = remember { SettingsYouTubeAccountAuthorizationSnapshot(YouTubeAuthBundle()) }
+    val emptyQQMusicAuthorization = remember { SettingsQQMusicAccountAuthorizationSnapshot(QQMusicAuthBundle()) }
     val biliAuthorization by biliAuthorizationFlow.collectAsStateWithLifecycle(initialValue = emptyAuthorization)
     val neteaseAuthorization by neteaseAuthorizationFlow.collectAsStateWithLifecycle(initialValue = emptyAuthorization)
     val youtubeAuthorization by youtubeAuthorizationFlow.collectAsStateWithLifecycle(initialValue = emptyYouTubeAuthorization)
+    val qqMusicAuthorization by qqMusicAuthorizationFlow.collectAsStateWithLifecycle(initialValue = emptyQQMusicAuthorization)
     val youtubeEnabled by AppContainer.settingsRepo.youtubeEnabledFlow.collectAsStateWithLifecycle(
         initialValue = YouTubeFeatureGate.isEnabled()
     )
@@ -102,11 +112,20 @@ internal fun SettingsLoginExpandedContent(
         request = SettingsAccountProfileRequest(youtube.hasSavedAuth, youtubeAuthorization.savedAt, youtubeAuthorization.identity),
         isActive = isActive && youtubeEnabled
     ) { loadYouTubeAccountProfile(youtubeAuthorization) }
+    val qqMusicProfile = rememberSettingsAccountProfile(
+        request = SettingsAccountProfileRequest(
+            qqMusic.hasSavedCookies,
+            qqMusicAuthorization.savedAt,
+            qqMusicAuthorization.identity
+        ),
+        isActive = isActive
+    ) { loadQQMusicAccountProfile(qqMusicAuthorization) }
 
-    LaunchedEffect(biliVm, youtubeVm, neteaseVm) {
+    LaunchedEffect(biliVm, youtubeVm, neteaseVm, qqMusicVm) {
         biliVm.refreshAuthHealth()
         neteaseVm.refreshAuthHealth()
         youtubeVm.refreshAuthHealth()
+        qqMusicVm.refreshAuthHealth()
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -135,6 +154,14 @@ internal fun SettingsLoginExpandedContent(
                     savedAtLabel = accountSavedAtText(youtube.health.savedAt),
                     profile = youtubeProfile.profile,
                     profileLoading = youtubeProfile.loading
+                ),
+                SettingsAccountCardUiState(
+                    platform = SettingsAccountPlatform.QqMusic,
+                    hasSavedAuthorization = qqMusic.hasSavedCookies,
+                    authorizationComplete = hasValidSavedCookieHealth(qqMusic.health.state),
+                    savedAtLabel = accountSavedAtText(qqMusic.health.savedAt),
+                    profile = qqMusicProfile.profile,
+                    profileLoading = qqMusicProfile.loading
                 )
             ),
             onLogin = controller.actions::openPlatformLogin,

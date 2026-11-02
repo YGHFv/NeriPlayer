@@ -110,7 +110,7 @@ class SettingsAccountCardsGlassTest {
         composeRule.onNodeWithTag("settingsAccountIdentity:netease", true)
             .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
         composeRule.onNodeWithTag("settingsAccountCard:qq")
-            .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick))
 
         val card = composeRule.onNodeWithTag("settingsAccountCard:netease")
         val initial = card.captureToImage()

@@ -31,7 +31,8 @@ internal object PlaybackMediaItemFactory {
         neteaseFallbackEnabled: () -> Boolean,
         youtubeQuality: () -> String,
         biliQuality: () -> String,
-        neteaseQuality: () -> String
+        neteaseQuality: () -> String,
+        qqMusicQuality: () -> String
     ): String {
         ServerSongRef.from(song)?.let { return it.cacheKey }
         if (LocalSongSupport.isLocalSong(song, context)) return "local-${song.stableKey().hashCode()}"
@@ -39,6 +40,7 @@ internal object PlaybackMediaItemFactory {
             return youtubeSongCacheKey(song, youtubeQualityOverride, youtubePreferM4a, youtubeQuality)
         }
         if (isBiliSource(song)) return biliSongCacheKey(song, biliQuality)
+        if (isQqMusicSource(song)) return qqMusicSongCacheKey(song, qqMusicQuality())
         return neteaseCacheKey(song.id, neteaseQuality(), neteaseFallbackEnabled())
     }
 
@@ -58,6 +60,9 @@ internal object PlaybackMediaItemFactory {
     fun isBiliSource(song: SongItem): Boolean =
         song.channelId == ListenTogetherChannels.BILIBILI || song.album.startsWith(BILI_SOURCE_TAG)
 
+    fun isQqMusicSource(song: SongItem): Boolean =
+        song.channelId == ListenTogetherChannels.QQ_MUSIC
+
     private fun biliSongCacheKey(song: SongItem, quality: () -> String): String {
         val songId = song.audioId ?: song.id.toString()
         val cid = song.subAudioId ?: biliCidFromAlbum(song.album)
@@ -69,6 +74,12 @@ internal object PlaybackMediaItemFactory {
         .substringAfter('|', "")
         .substringBefore('|')
         .takeIf { it.isNotBlank() }
+
+    fun qqMusicSongCacheKey(song: SongItem, preferredQuality: String): String {
+        val quality = preferredQuality.trim().lowercase().ifBlank { "exhigh" }
+        val mid = song.audioId?.trim()?.takeIf(String::isNotBlank) ?: song.id.toString()
+        return "qqmusic-$mid-$quality"
+    }
 
     fun neteaseCacheKey(songId: Long, preferredQuality: String, useFallbackNamespace: Boolean): String {
         val quality = preferredQuality.trim().lowercase().ifBlank { "exhigh" }

@@ -173,7 +173,8 @@ internal object DownloadExecutionRoomReadStore {
                                 DownloadAudioQualitySelection.normalized(
                                     neteaseQuality = quality.optString("neteaseQuality"),
                                     youtubeQuality = quality.optString("youtubeQuality"),
-                                    biliQuality = quality.optString("biliQuality")
+                                    biliQuality = quality.optString("biliQuality"),
+                                    qqMusicQuality = quality.optString("qqMusicQuality")
                                 )
                             }
                     )

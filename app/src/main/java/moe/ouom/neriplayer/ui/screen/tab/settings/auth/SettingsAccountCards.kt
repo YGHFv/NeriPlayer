@@ -89,7 +89,7 @@ internal fun SettingsAccountCardsContent(
                     SettingsAccountPlatform.Netease -> "manual:netease_login"
                     SettingsAccountPlatform.Bilibili -> "manual:bili_login"
                     SettingsAccountPlatform.YouTube -> "manual:youtube_login"
-                    SettingsAccountPlatform.QqMusic -> null
+                    SettingsAccountPlatform.QqMusic -> "manual:qq_login"
                 },
                 highlightTargetId = highlightTargetId,
                 highlightPulse = highlightPulse,
@@ -113,7 +113,6 @@ private fun SettingsAccountCard(
     suppressInactiveNavigationSurface: Boolean,
     fallbackColor: Color?
 ) {
-    val supported = account.platform != SettingsAccountPlatform.QqMusic
     val key = account.platform.key
     val highlightModifier = if (targetId != null) {
         Modifier.settingsHighlightTarget(targetId, highlightTargetId, highlightPulse, onHighlightFinished)
@@ -121,15 +120,17 @@ private fun SettingsAccountCard(
     SettingsAccountCardSurface(
         modifier = Modifier.testTag("settingsAccountCard:$key"),
         contentModifier = highlightModifier,
-        onClick = if (supported) {
-            SettingsAccountEntryAction(account.hasSavedAuthorization, onManageSaved, onLogin).onClick
-        } else null,
+        onClick = SettingsAccountEntryAction(
+            account.hasSavedAuthorization,
+            onManageSaved,
+            onLogin
+        ).onClick,
         suppressInactiveNavigationSurface = suppressInactiveNavigationSurface,
         fallbackColor = fallbackColor
     ) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
             val inlineActions = maxWidth >= (560f * LocalDensity.current.fontScale.coerceAtLeast(1f)).dp
-            if (inlineActions && supported) {
+            if (inlineActions) {
                 Row(
                     modifier = Modifier.fillMaxWidth().testTag("settingsAccountInline:$key"),
                     horizontalArrangement = Arrangement.spacedBy(20.dp),
@@ -147,9 +148,7 @@ private fun SettingsAccountCard(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     SettingsAccountIdentity(account = account)
-                    if (supported) {
-                        SettingsAccountActions(account, onLogin, onManageSaved, Modifier.fillMaxWidth())
-                    }
+                    SettingsAccountActions(account, onLogin, onManageSaved, Modifier.fillMaxWidth())
                 }
             }
         }
@@ -196,7 +195,6 @@ private fun SettingsAccountIdentity(
     modifier: Modifier = Modifier
 ) {
     val platformName = stringResource(account.platform.titleRes)
-    val supported = account.platform != SettingsAccountPlatform.QqMusic
     Row(
         modifier = modifier.fillMaxWidth().testTag("settingsAccountIdentity:${account.platform.key}"),
         verticalAlignment = Alignment.CenterVertically,
@@ -224,31 +222,23 @@ private fun SettingsAccountIdentity(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            if (supported) {
-                Text(
-                    text = account.profile?.nickname ?: stringResource(
-                        when {
-                            account.profileLoading -> CoreCommonR.string.settings_account_profile_loading
-                            account.hasSavedAuthorization -> CoreCommonR.string.settings_account_profile_unavailable
-                            else -> CoreCommonR.string.settings_account_sign_in_hint
-                        }
-                    ),
-                    modifier = Modifier.testTag("settingsAccountNickname:${account.platform.key}"),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                SettingsAccountAuthorization(account)
-            } else {
-                Text(
-                    text = stringResource(CoreCommonR.string.common_coming_soon),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text = account.profile?.nickname ?: stringResource(
+                    when {
+                        account.profileLoading -> CoreCommonR.string.settings_account_profile_loading
+                        account.hasSavedAuthorization -> CoreCommonR.string.settings_account_profile_unavailable
+                        else -> CoreCommonR.string.settings_account_sign_in_hint
+                    }
+                ),
+                modifier = Modifier.testTag("settingsAccountNickname:${account.platform.key}"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            SettingsAccountAuthorization(account)
         }
-        if (supported && account.hasSavedAuthorization) {
+        if (account.hasSavedAuthorization) {
             SettingsAccountAvatar(account, platformName)
         }
     }
