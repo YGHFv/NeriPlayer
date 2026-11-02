@@ -384,7 +384,7 @@ jobs:
       NERI_BUILD_UUID: ${{ needs.ci-tooling.outputs.build_uuid }}
       NERI_BUILD_TIMESTAMP: ${{ needs.ci-tooling.outputs.build_timestamp }}
       NERI_BUILD_VERSION_TIMESTAMP: ${{ needs.ci-tooling.outputs.build_version_timestamp }}
-      NERI_SIGNING_MODE: ${{ github.repository == 'YGHFv/NeriPlayer' && github.event_name == 'push' && github.ref == 'refs/heads/master' && 'signed' || 'unsigned' }}
+      NERI_SIGNING_MODE: ${{ github.repository == 'YGHFv/NeriPlayer' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/master' && 'signed' || 'unsigned' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -538,7 +538,7 @@ jobs:
       - name: Publish CI APKs after all gates pass
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ github.repository == 'YGHFv/NeriPlayer' && github.event_name == 'push' && github.ref == 'refs/heads/master' && 'neri-apk' || 'neri-apk-unsigned' }}
+          name: ${{ github.repository == 'YGHFv/NeriPlayer' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/master' && 'neri-apk' || 'neri-apk-unsigned' }}
           path: build/release-artifacts/*
           if-no-files-found: error
           compression-level: 0
@@ -613,7 +613,7 @@ jobs:
       - build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: ${{ success() && github.repository == 'YGHFv/NeriPlayer' && github.event_name == 'push' && github.ref == 'refs/heads/master' && !startsWith(github.event.head_commit.message, '[skip ci]') }}
+    if: ${{ success() && github.repository == 'YGHFv/NeriPlayer' && github.ref == 'refs/heads/master' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && !startsWith(github.event.head_commit.message, '[skip ci]'))) }}
     permissions:
       contents: write
     steps:
