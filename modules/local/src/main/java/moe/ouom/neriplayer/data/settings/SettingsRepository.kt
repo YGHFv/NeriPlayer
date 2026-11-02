@@ -578,6 +578,9 @@ class SettingsRepository(private val context: Context) {
     val homeCardBilibiliFlow: Flow<Boolean> =
         autoSettingsRepository.homeCardBilibiliFlow
 
+    val homeCardQqMusicFlow: Flow<Boolean> =
+        autoSettingsRepository.homeCardQqMusicFlow
+
     val playbackFadeInFlow: Flow<Boolean> =
         dataStoreSettingFlow { it[SettingsKeys.PLAYBACK_FADE_IN] ?: true }
 
@@ -1372,6 +1375,10 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setHomeCardBilibili(enabled: Boolean) {
         autoSettingsRepository.setHomeCardBilibili(enabled)
+    }
+
+    suspend fun setHomeCardQqMusic(enabled: Boolean) {
+        autoSettingsRepository.setHomeCardQqMusic(enabled)
     }
 
     suspend fun setPlaybackFadeIn(enabled: Boolean) {

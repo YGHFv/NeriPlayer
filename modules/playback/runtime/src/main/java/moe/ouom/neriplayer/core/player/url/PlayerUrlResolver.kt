@@ -59,8 +59,15 @@ internal fun qualityLabelForYouTube(key: String, getLocalizedString: (Int) -> St
 
 internal fun qualityLabelForQqMusic(key: String, getLocalizedString: (Int) -> String): String = when (key) {
     "standard" -> getLocalizedString(CoreCommonR.string.quality_standard)
-    "exhigh" -> getLocalizedString(CoreCommonR.string.quality_very_high)
+    "higher" -> getLocalizedString(CoreCommonR.string.quality_qq_music_hq_192)
+    "exhigh" -> getLocalizedString(CoreCommonR.string.quality_qq_music_hq_320)
     "lossless" -> getLocalizedString(CoreCommonR.string.quality_lossless)
+    "hires" -> getLocalizedString(CoreCommonR.string.quality_qq_music_hires)
+    "atmos51" -> getLocalizedString(CoreCommonR.string.quality_qq_music_atmos_51)
+    "atmos71" -> getLocalizedString(CoreCommonR.string.quality_qq_music_atmos_71)
+    "dolby" -> getLocalizedString(CoreCommonR.string.quality_dolby)
+    "dtsx" -> getLocalizedString(CoreCommonR.string.quality_qq_music_dtsx)
+    "master" -> getLocalizedString(CoreCommonR.string.quality_qq_music_master)
     "preview" -> getLocalizedString(CoreCommonR.string.quality_preview)
     else -> key
 }
@@ -69,8 +76,15 @@ internal fun buildQqMusicQualityOptions(
     getLocalizedString: (Int) -> String
 ): List<PlaybackQualityOption> = listOf(
     PlaybackQualityOption("standard", qualityLabelForQqMusic("standard", getLocalizedString)),
+    PlaybackQualityOption("higher", qualityLabelForQqMusic("higher", getLocalizedString)),
     PlaybackQualityOption("exhigh", qualityLabelForQqMusic("exhigh", getLocalizedString)),
-    PlaybackQualityOption("lossless", qualityLabelForQqMusic("lossless", getLocalizedString))
+    PlaybackQualityOption("lossless", qualityLabelForQqMusic("lossless", getLocalizedString)),
+    PlaybackQualityOption("hires", qualityLabelForQqMusic("hires", getLocalizedString)),
+    PlaybackQualityOption("atmos51", qualityLabelForQqMusic("atmos51", getLocalizedString)),
+    PlaybackQualityOption("atmos71", qualityLabelForQqMusic("atmos71", getLocalizedString)),
+    PlaybackQualityOption("dolby", qualityLabelForQqMusic("dolby", getLocalizedString)),
+    PlaybackQualityOption("dtsx", qualityLabelForQqMusic("dtsx", getLocalizedString)),
+    PlaybackQualityOption("master", qualityLabelForQqMusic("master", getLocalizedString))
 )
 
 internal fun buildNeteaseQualityOptions(getLocalizedString: (Int) -> String): List<PlaybackQualityOption> = listOf(

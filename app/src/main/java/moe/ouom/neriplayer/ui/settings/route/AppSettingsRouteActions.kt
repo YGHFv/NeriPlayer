@@ -370,6 +370,10 @@ internal class AppHomeSettingsActions(
     val onShowHomeBilibiliCardChange: (Boolean) -> Unit = { enabled ->
             scope.launch { repo.setHomeCardBilibili(enabled) }
         }
+
+    val onShowHomeQqMusicCardChange: (Boolean) -> Unit = { enabled ->
+            scope.launch { repo.setHomeCardQqMusic(enabled) }
+        }
 }
 
 internal class AppStorageSettingsActions(

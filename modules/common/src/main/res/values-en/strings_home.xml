@@ -23,6 +23,9 @@
     <string name="home_netease_high_quality_playlists">High-Quality Playlists</string>
     <string name="home_netease_hot_playlists">Hot Playlists</string>
     <string name="home_netease_acg_playlists">ACG Playlists</string>
+    <string name="home_qq_music_recommendation_shelf">QQ Music · %1$s</string>
+    <string name="home_qq_music_recommendations">QQ Music Recommendations</string>
+    <string name="home_qq_music_playlists">QQ Music Recommended Playlists</string>
     <string name="home_loading">Loading recommendations for you…</string>
     <string name="home_error_network">Network or server error: %s</string>
     <string name="home_error_unknown">Parse or unknown error: %s</string>

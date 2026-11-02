@@ -30,6 +30,8 @@ import moe.ouom.neriplayer.data.settings.SettingsRepository
 import moe.ouom.neriplayer.platform.bilibili.api.client.BiliClient
 import moe.ouom.neriplayer.platform.netease.api.client.NeteaseClient
 import moe.ouom.neriplayer.platform.netease.auth.NeteaseCookieRepository
+import moe.ouom.neriplayer.data.model.qqmusic.auth.QQMusicAuthBundle
+import moe.ouom.neriplayer.platform.qqmusic.auth.QQMusicAuthRepository
 import moe.ouom.neriplayer.platform.youtube.auth.YouTubeAuthRepository
 import moe.ouom.neriplayer.ui.viewmodel.tab.bili.BiliMusicHomeRepository
 import org.junit.After
@@ -55,6 +57,8 @@ class HomeBilibiliInternationalizationTest {
     private val dispatcher = StandardTestDispatcher()
     private val internationalEnabled = MutableStateFlow(false)
     private val savedBilibiliEnabled = MutableStateFlow(true)
+    private val savedQqMusicEnabled = MutableStateFlow(true)
+    private val qqMusicAuth = MutableStateFlow(QQMusicAuthBundle())
     private val biliClient = mock(BiliClient::class.java)
     private val restoredDependencies = mutableListOf<() -> Unit>()
     private val period = BiliMusicRankPeriod(101L, 1, 1000L)
@@ -84,15 +88,20 @@ class HomeBilibiliInternationalizationTest {
         `when`(cookieRepo.cookieFlow).thenReturn(MutableStateFlow(emptyMap()))
         val settingsRepo = mock(SettingsRepository::class.java)
         `when`(settingsRepo.homeCardBilibiliFlow).thenReturn(savedBilibiliEnabled)
+        `when`(settingsRepo.homeCardQqMusicFlow).thenReturn(savedQqMusicEnabled)
         `when`(settingsRepo.internationalizationEnabledFlow).thenReturn(internationalEnabled)
         `when`(settingsRepo.youtubeEnabledFlow).thenReturn(MutableStateFlow(false))
         val youtubeAuthRepo = mock(YouTubeAuthRepository::class.java)
         `when`(youtubeAuthRepo.getAuthOnce()).thenReturn(YouTubeAuthBundle())
         `when`(youtubeAuthRepo.authFlow).thenReturn(MutableStateFlow(YouTubeAuthBundle()))
+        val qqMusicAuthRepo = mock(QQMusicAuthRepository::class.java)
+        `when`(qqMusicAuthRepo.getAuthOnce()).thenAnswer { qqMusicAuth.value }
+        `when`(qqMusicAuthRepo.authFlow).thenReturn(qqMusicAuth)
         replaceLazy("neteaseCookieRepo", cookieRepo)
         replaceLazy("neteaseClient", mock(NeteaseClient::class.java))
         replaceLazy("settingsRepo", settingsRepo)
         replaceLazy("youtubeAuthRepo", youtubeAuthRepo)
+        replaceLazy("qqMusicAuthRepo", qqMusicAuthRepo)
         replaceLazy("biliClient", biliClient)
         preserveBilibiliCache()
         runBlocking {
@@ -120,6 +129,28 @@ class HomeBilibiliInternationalizationTest {
         assertHidden(vm)
         assertTrue(savedBilibiliEnabled.value)
         assertFalse(vm.uiState.value.internationalizationEnabled)
+    }
+
+    @Test
+    fun `QQ Music home clears immediately when its saved switch is disabled`() = homeTest {
+        qqMusicAuth.value = QQMusicAuthBundle(
+            cookies = mapOf(
+                "uin" to "10001",
+                "qm_keyst" to "private-key",
+                "tmeLoginType" to "2"
+            )
+        )
+        val vm = createViewModel()
+        runCurrent()
+        assertTrue(vm.uiState.value.qqMusicHomeEnabled)
+
+        savedQqMusicEnabled.value = false
+        runCurrent()
+
+        assertFalse(vm.uiState.value.qqMusicHomeEnabled)
+        assertFalse(vm.uiState.value.qqMusicHome.enabled)
+        assertTrue(vm.uiState.value.qqMusicHome.shelves.isEmpty())
+        assertTrue(vm.uiState.value.qqMusicHome.playlists.isEmpty())
     }
 
     @Test

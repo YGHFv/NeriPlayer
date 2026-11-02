@@ -23,6 +23,9 @@
     <string name="home_netease_high_quality_playlists">精品歌单</string>
     <string name="home_netease_hot_playlists">热门歌单</string>
     <string name="home_netease_acg_playlists">ACG 歌单</string>
+    <string name="home_qq_music_recommendation_shelf">QQ 音乐 · %1$s</string>
+    <string name="home_qq_music_recommendations">QQ 音乐推荐</string>
+    <string name="home_qq_music_playlists">QQ 音乐推荐歌单</string>
     <string name="home_loading">正在为你加载首页推荐…</string>
     <string name="home_error_network">网络或服务器异常：%s</string>
     <string name="home_error_unknown">解析或未知错误：%s</string>

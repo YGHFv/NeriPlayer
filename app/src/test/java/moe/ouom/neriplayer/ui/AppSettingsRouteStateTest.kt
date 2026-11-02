@@ -92,16 +92,19 @@ class AppSettingsRouteStateTest {
             .onInternationalizationEnabledChange(nextInternationalization)
         AppUsbExclusiveSettingsActions(repository, this).onBitPerfectChange(nextBitPerfect)
         AppHomeSettingsActions(repository, this).onShowHomeBilibiliCardChange(false)
+        AppHomeSettingsActions(repository, this).onShowHomeQqMusicCardChange(false)
 
         val updated = withTimeout(10_000) {
             appSettingsRouteStateFlow(repository).first { state ->
                 state.other.internationalizationEnabled == nextInternationalization &&
                     state.playback.usbExclusivePreferences.bitPerfect == nextBitPerfect &&
-                    !state.other.homeCards.showHomeBilibiliCard
+                    !state.other.homeCards.showHomeBilibiliCard &&
+                    !state.other.homeCards.showHomeQqMusicCard
             }
         }
         assertEquals(nextInternationalization, updated.other.internationalizationEnabled)
         assertEquals(nextBitPerfect, updated.playback.usbExclusivePreferences.bitPerfect)
         assertEquals(false, updated.other.homeCards.showHomeBilibiliCard)
+        assertEquals(false, updated.other.homeCards.showHomeQqMusicCard)
     }
 }

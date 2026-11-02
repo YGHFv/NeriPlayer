@@ -42,7 +42,18 @@ class DownloadAudioQualitySettingsTest {
 
     @Test
     fun `saved QQ Music qualities retain all supported values`() {
-        listOf("standard", "exhigh", "lossless").forEach { quality ->
+        listOf(
+            "standard",
+            "higher",
+            "exhigh",
+            "lossless",
+            "hires",
+            "atmos51",
+            "atmos71",
+            "dolby",
+            "dtsx",
+            "master"
+        ).forEach { quality ->
             assertEquals(quality, normalizeDownloadQQMusicAudioQuality(quality))
             assertEquals(
                 quality,

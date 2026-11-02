@@ -53,6 +53,7 @@ import androidx.compose.material.icons.rounded.Keyboard
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.LiveTv
 import androidx.compose.material.icons.rounded.LocalOffer
 import androidx.compose.material.icons.rounded.Lyrics
@@ -168,6 +169,7 @@ internal fun settingGlyphFor(key: String): SettingGlyph? = when (key) {
     "home_card_radar" -> g(Icons.Rounded.Radar, Teal)
     "home_card_recommended" -> g(Icons.Rounded.Recommend, Pink)
     "home_card_bilibili" -> g(Icons.Rounded.LiveTv, Pink)
+    "home_card_qq_music" -> g(Icons.Rounded.LibraryMusic, Green)
     "always_use_new_tab_style" -> g(Icons.Rounded.Tab, Indigo)
     // now playing
     "show_cover_source_badge" -> g(Icons.Rounded.Sell, Teal)

@@ -8,6 +8,11 @@ import moe.ouom.neriplayer.data.model.bilibili.video.VideoStats
 import moe.ouom.neriplayer.data.model.ltw.track.ListenTogetherChannels
 import moe.ouom.neriplayer.data.model.music.MusicPlatform
 import moe.ouom.neriplayer.data.model.music.SongSearchInfo
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicPlaylistKind
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicRecommendationFeed
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicRecommendationPlaylist
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicRecommendationShelf
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicSong
 import moe.ouom.neriplayer.data.model.youtube.music.YouTubeMusicSearchResult
 import moe.ouom.neriplayer.data.model.youtube.music.YouTubeMusicSearchResultType
 import org.junit.Assert.assertEquals
@@ -162,6 +167,42 @@ class ExploreViewModelMappingTest {
     }
 
     @Test
+    fun `QQ Music recommendation feed maps songs and playlists for discovery`() {
+        val state = QQMusicRecommendationFeed(
+            shelves = listOf(
+                QQMusicRecommendationShelf(
+                    title = "For you",
+                    songs = listOf(qqMusicSong())
+                ),
+                QQMusicRecommendationShelf(title = "Empty", songs = emptyList())
+            ),
+            playlists = listOf(
+                QQMusicRecommendationPlaylist(
+                    id = 42L,
+                    name = "Night drive",
+                    coverUrl = "https://img/playlist.jpg",
+                    playCount = 900L,
+                    trackCount = 12
+                )
+            )
+        ).toExploreState()
+
+        assertEquals(listOf("For you"), state.shelves.map { it.title })
+        val song = state.shelves.single().songs.single()
+        assertEquals("Track", song.name)
+        assertEquals("Artist", song.artist)
+        assertEquals(ListenTogetherChannels.QQ_MUSIC, song.channelId)
+        assertEquals("songmid", song.audioId)
+        assertEquals("medianew", song.subAudioId)
+
+        val playlist = state.playlists.single().toQQMusicPlaylist()
+        assertEquals(42L, playlist.id)
+        assertEquals(0L, playlist.dirId)
+        assertEquals("Night drive", playlist.title)
+        assertEquals(QQMusicPlaylistKind.FAVORITE, playlist.kind)
+    }
+
+    @Test
     fun `collection share falls back to the uploader when the season owner is unknown`() {
         val target = videoInfo(
             ownerMid = 100L,
@@ -209,6 +250,19 @@ class ExploreViewModelMappingTest {
         durationText = "3:00",
         durationMs = 180_000L,
         type = type
+    )
+
+    private fun qqMusicSong() = QQMusicSong(
+        id = 102065756L,
+        mid = "songmid",
+        mediaMid = "medianew",
+        name = "Track",
+        artist = "Artist",
+        album = "Album",
+        albumId = 7L,
+        albumMid = "albummid",
+        durationMs = 185_000L,
+        coverUrl = "https://img/cover.jpg"
     )
 
     private fun videoInfo(ownerMid: Long, ugcSeason: UgcSeason?) = VideoBasicInfo(

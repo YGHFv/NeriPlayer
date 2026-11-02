@@ -58,12 +58,16 @@ import moe.ouom.neriplayer.data.model.NeteaseArtistSummary
 import moe.ouom.neriplayer.data.model.SongItem
 import moe.ouom.neriplayer.data.model.ltw.track.ListenTogetherChannels
 import moe.ouom.neriplayer.data.model.music.SongSearchInfo
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicPlaylistKind
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicRecommendationFeed
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicRecommendationPlaylist
 import moe.ouom.neriplayer.platform.netease.mapping.parseNeteaseSongDetail
 import moe.ouom.neriplayer.platform.youtube.config.YouTubeFeatureGate
 import moe.ouom.neriplayer.platform.youtube.api.transport.buildYouTubeMusicMediaUri
 import moe.ouom.neriplayer.platform.youtube.api.transport.stableYouTubeMusicId
 import moe.ouom.neriplayer.platform.youtube.api.transport.youtubeMusicThumbnailUrl
 import moe.ouom.neriplayer.common.search.SearchTextMatcher
+import moe.ouom.neriplayer.ui.viewmodel.playlist.toSongItem as toQQMusicSongItem
 import moe.ouom.neriplayer.util.search.searchValues
 import org.json.JSONObject
 
@@ -198,9 +202,42 @@ data class ExploreUiState(
     val selectedYouTubeMusicSearchType: YouTubeExploreSearchType = YouTubeExploreSearchType.SONG,
     val isNeteaseLoggedIn: Boolean = false,
     val isQQMusicLoggedIn: Boolean = false,
+    val qqMusicDiscover: QQMusicExploreState = QQMusicExploreState(),
     val ytMusicPlaylists: List<YouTubeMusicPlaylist> = emptyList(),
     val ytMusicPlaylistsLoading: Boolean = false,
     val ytMusicPlaylistsError: UiText? = null
+)
+
+data class QQMusicExploreShelf(
+    val title: String,
+    val songs: List<SongItem>
+)
+
+data class QQMusicExploreState(
+    val shelves: List<QQMusicExploreShelf> = emptyList(),
+    val playlists: List<QQMusicRecommendationPlaylist> = emptyList(),
+    val loading: Boolean = false,
+    val error: UiText? = null
+)
+
+internal fun QQMusicRecommendationFeed.toExploreState(): QQMusicExploreState = QQMusicExploreState(
+    shelves = shelves.mapNotNull { shelf ->
+        val songs = shelf.songs.map { it.toQQMusicSongItem() }
+        songs.takeIf { it.isNotEmpty() }?.let {
+            QQMusicExploreShelf(title = shelf.title, songs = it)
+        }
+    },
+    playlists = playlists
+)
+
+internal fun QQMusicRecommendationPlaylist.toQQMusicPlaylist(): QQMusicPlaylist = QQMusicPlaylist(
+    id = id,
+    dirId = 0L,
+    title = name,
+    coverUrl = coverUrl,
+    trackCount = trackCount,
+    playCount = playCount,
+    kind = QQMusicPlaylistKind.FAVORITE
 )
 
 internal fun isNeteaseExploreSearchAvailable(authState: SavedCookieAuthState): Boolean {
@@ -346,6 +383,10 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
     private var highQualityLoadCookies: Map<String, String>? = null
     private var searchJob: Job? = null
     private var searchMoreJob: Job? = null
+    private var qqMusicDiscoverJob: Job? = null
+    private var qqMusicDiscoverAccountId: String? = null
+    private var qqMusicDiscoverBootstrapped = false
+    private var qqMusicDiscoverGeneration = 0L
     private var ytMusicPlaylistsJob: Job? = null
     private var ytMusicPlaylistsPending = false
     private var searchRequestVersion = 0L
@@ -377,9 +418,28 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
         }
         viewModelScope.launch {
             AppContainer.qqMusicAuthRepo.authFlow.collect { auth ->
+                val loggedIn = auth.hasLoginCookies()
+                val accountId = auth.musicId.takeIf { loggedIn }
+                val accountChanged = qqMusicDiscoverAccountId != accountId
+                qqMusicDiscoverAccountId = accountId
+                if (!loggedIn) {
+                    qqMusicDiscoverBootstrapped = false
+                    cancelQQMusicDiscover(clearContent = true)
+                }
                 _uiState.value = _uiState.value.copy(
-                    isQQMusicLoggedIn = auth.hasLoginCookies()
+                    isQQMusicLoggedIn = loggedIn,
+                    qqMusicDiscover = if (loggedIn && !accountChanged) {
+                        _uiState.value.qqMusicDiscover
+                    } else if (loggedIn) {
+                        QQMusicExploreState(loading = true)
+                    } else {
+                        QQMusicExploreState()
+                    }
                 )
+                if (loggedIn && (accountChanged || !qqMusicDiscoverBootstrapped)) {
+                    qqMusicDiscoverBootstrapped = true
+                    loadQQMusicDiscover(force = accountChanged, clearContent = accountChanged)
+                }
             }
         }
         viewModelScope.launch {
@@ -1392,6 +1452,76 @@ class ExploreViewModel(application: Application) : AndroidViewModel(application)
                     )
                 }
             }
+        }
+    }
+
+    /** 加载 QQ 音乐发现页推荐；未登录时保持登录提示状态。 */
+    fun loadQQMusicDiscover(
+        force: Boolean = false,
+        clearContent: Boolean = false
+    ) {
+        if (!_uiState.value.isQQMusicLoggedIn) return
+        val current = _uiState.value.qqMusicDiscover
+        if (
+            !force &&
+            (
+                current.loading ||
+                    current.shelves.isNotEmpty() ||
+                    current.playlists.isNotEmpty()
+                )
+        ) {
+            return
+        }
+        val generation = ++qqMusicDiscoverGeneration
+        qqMusicDiscoverJob?.cancel()
+        val baseState = if (clearContent) QQMusicExploreState() else current
+        _uiState.value = _uiState.value.copy(
+            qqMusicDiscover = baseState.copy(loading = true, error = null)
+        )
+        qqMusicDiscoverJob = viewModelScope.launch {
+            try {
+                val feed = withContext(Dispatchers.IO) {
+                    AppContainer.qqMusicClient.getHomeRecommendations()
+                }
+                val discover = withContext(Dispatchers.Default) {
+                    feed.toExploreState()
+                }
+                if (generation != qqMusicDiscoverGeneration) return@launch
+                NPLogger.d(
+                    TAG,
+                    "loadQQMusicDiscover success: shelves=${discover.shelves.size}, " +
+                        "playlists=${discover.playlists.size}"
+                )
+                _uiState.value = _uiState.value.copy(qqMusicDiscover = discover)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (generation != qqMusicDiscoverGeneration) return@launch
+                NPLogger.e(TAG, "loadQQMusicDiscover failed", e)
+                _uiState.value = _uiState.value.copy(
+                    qqMusicDiscover = baseState.copy(
+                        loading = false,
+                        error = feedbackText(
+                            CoreCommonR.string.error_qq_music_search,
+                            e.message
+                                ?: feedbackText(CoreCommonR.string.github_sync_failed_message)
+                        )
+                    )
+                )
+            } finally {
+                if (generation == qqMusicDiscoverGeneration) {
+                    qqMusicDiscoverJob = null
+                }
+            }
+        }
+    }
+
+    private fun cancelQQMusicDiscover(clearContent: Boolean) {
+        qqMusicDiscoverGeneration += 1L
+        qqMusicDiscoverJob?.cancel()
+        qqMusicDiscoverJob = null
+        if (clearContent) {
+            _uiState.value = _uiState.value.copy(qqMusicDiscover = QQMusicExploreState())
         }
     }
 

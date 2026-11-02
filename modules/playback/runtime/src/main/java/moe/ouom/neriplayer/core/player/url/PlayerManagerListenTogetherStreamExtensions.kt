@@ -281,8 +281,15 @@ private val YOUTUBE_LISTEN_TOGETHER_QUALITY_ORDER = listOf(
 
 private val QQ_MUSIC_LISTEN_TOGETHER_QUALITY_ORDER = listOf(
     "standard",
+    "higher",
     "exhigh",
-    "lossless"
+    "lossless",
+    "hires",
+    "atmos51",
+    "atmos71",
+    "dolby",
+    "dtsx",
+    "master"
 )
 
 internal fun isShareableListenTogetherStreamResolution(result: SongUrlResult): Boolean {

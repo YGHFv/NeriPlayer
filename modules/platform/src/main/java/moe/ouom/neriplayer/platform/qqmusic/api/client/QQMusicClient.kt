@@ -13,6 +13,9 @@ import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicLibraryPlaylist
 import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicLibraryPlaylistsResult
 import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicPlaylistDetail
 import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicPlaylistKind
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicRecommendationFeed
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicRecommendationPlaylist
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicRecommendationShelf
 import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicSong
 import moe.ouom.neriplayer.network.http.awaitResponse
 import okhttp3.HttpUrl
@@ -49,6 +52,13 @@ class QQMusicClient(
             "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/124.0 Mobile Safari/537.36"
         const val PAGE_SIZE = 100
         const val MAX_PAGES = 100
+        const val MAX_RECOMMENDATION_PAGES = 3
+        const val MAX_RECOMMENDATION_SONG_SHELVES = 3
+        const val MAX_RECOMMENDATION_TRACKS = 60
+        const val MAX_RECOMMENDATION_PLAYLIST_PAGES = 2
+        const val RECOMMENDATION_PLAYLIST_PAGE_SIZE = 25
+        const val MAX_RECOMMENDATION_PLAYLISTS = 60
+        const val RECOMMENDATION_SONG_SHELF_ID = 207L
         const val PREFERRED_STREAM_DOMAIN = "https://sjy6.stream.qqmusic.qq.com/"
         const val FALLBACK_STREAM_DOMAIN = "https://dl.stream.qqmusic.qq.com/"
         private val BACKUP_STREAM_DOMAINS = listOf(
@@ -147,6 +157,93 @@ class QQMusicClient(
             ?: throw IOException("QQ Music song detail response has no valid song")
     }
 
+    suspend fun getHomeRecommendations(): QQMusicRecommendationFeed =
+        withContext(Dispatchers.IO) {
+            val auth = requireAuthenticatedAuth()
+            val commOverrides = recommendationCommOverrides()
+            val shelves = mutableListOf<JSONObject>()
+            var loadMark = 0
+            for (page in 1..MAX_RECOMMENDATION_PAGES) {
+                val data = executeMusicu(
+                    module = "music.recommend.RecommendFeed",
+                    method = "get_recommend_feed",
+                    param = JSONObject()
+                        .put("direction", if (page == 1) 0 else 1)
+                        .put("page", page)
+                        .put("s_num", shelves.size)
+                        .put("v_cache", JSONArray())
+                        .put("v_uniq", JSONArray()),
+                    auth = auth,
+                    commOverrides = commOverrides
+                )
+                val pageShelves = data.optJSONArray("v_shelf")
+                if (pageShelves == null) {
+                    if (page == 1) return@withContext QQMusicRecommendationFeed(
+                        shelves = emptyList(),
+                        playlists = emptyList()
+                    )
+                    break
+                }
+                for (index in 0 until pageShelves.length()) {
+                    pageShelves.optJSONObject(index)?.let(shelves::add)
+                }
+                loadMark = data.optInt("load_mark", 0)
+                if (pageShelves.length() == 0 || loadMark != 0) break
+            }
+
+            val songShelfValues = shelves
+                .filter { it.flexibleLong("id") == RECOMMENDATION_SONG_SHELF_ID }
+                .mapNotNull { shelf ->
+                    val songIds = parseRecommendationSongIds(shelf)
+                    if (songIds.isEmpty()) null else shelf to songIds
+                }
+                .take(MAX_RECOMMENDATION_SONG_SHELVES)
+            val allSongIds = songShelfValues
+                .flatMap { (_, ids) -> ids }
+                .distinct()
+                .take(MAX_RECOMMENDATION_TRACKS)
+            val tracksById = if (allSongIds.isEmpty()) {
+                emptyMap()
+            } else {
+                loadRecommendationTracks(allSongIds, auth, commOverrides)
+            }
+            val songShelves = songShelfValues.mapNotNull { (shelf, ids) ->
+                val songs = ids.mapNotNull(tracksById::get)
+                if (songs.isEmpty()) {
+                    null
+                } else {
+                    val titleTemplate = shelf.firstNonBlank("title_template").orEmpty()
+                    val titleContent = shelf.firstNonBlank("title_content").orEmpty()
+                    val title = titleTemplate
+                        .replace("{String}", titleContent)
+                        .replace("\u2062", "")
+                        .trim()
+                        .ifBlank { titleContent.trim() }
+                        .ifBlank { "QQ Music recommendations" }
+                    QQMusicRecommendationShelf(title = title, songs = songs)
+                }
+            }
+            val squarePlaylists = try {
+                loadRecommendationSquarePlaylists(auth, commOverrides)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                NPLogger.w(
+                    TAG,
+                    "QQ Music recommendation playlist feed failed",
+                    error
+                )
+                emptyList()
+            }
+            QQMusicRecommendationFeed(
+                shelves = songShelves,
+                playlists = mergeRecommendationPlaylists(
+                    parseRecommendationPlaylists(shelves),
+                    squarePlaylists
+                )
+            )
+        }
+
     suspend fun getPlaybackStream(
         songMid: String,
         mediaMid: String?,
@@ -157,6 +254,7 @@ class QQMusicClient(
         if (songMid.isBlank()) throw IOException("QQ Music song MID is required")
         val auth = authProvider()
         var songDetail: QQMusicSong? = null
+        val qualities = playbackQualityFallbacks(preferredQuality)
         val resolvedMediaMid = mediaMid
             ?.trim()
             ?.takeIf(String::isNotBlank)
@@ -167,49 +265,71 @@ class QQMusicClient(
             }.getOrNull()
                 ?.takeIf(String::isNotBlank)
             ?: songMid
+        if (songDetail == null && qualities.any { it.mediaRole != QualityMediaRole.BASE }) {
+            songDetail = runCatching { getSongDetail(songMid, auth) }
+                .onFailure { error ->
+                    if (error is CancellationException) throw error
+                    NPLogger.w(
+                        TAG,
+                        "QQ Music advanced media lookup failed: mid=$songMid",
+                        error
+                    )
+                }
+                .getOrNull()
+        }
         val guid = Random.nextInt(1_000_000_000, Int.MAX_VALUE).toString()
-        val qualities = playbackQualityFallbacks(preferredQuality)
         val authenticated = auth.hasLoginCookies()
         var lastVkeyError: Exception? = null
 
         for (quality in qualities) {
-            val vkeyData = try {
-                loadVkey(
+            val qualityMediaMid = qualityMediaMid(
+                quality = quality,
+                songDetail = songDetail,
+                fallbackMediaMid = resolvedMediaMid
+            ) ?: continue
+            for (filename in playbackFilenames(quality, songMid, qualityMediaMid)) {
+                val vkeyData = try {
+                    loadVkey(
+                        songMid = songMid,
+                        filename = filename,
+                        quality = quality,
+                        guid = guid,
+                        auth = auth,
+                        anonymous = false
+                    )
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    if (authenticated) {
+                        lastVkeyError = error
+                        NPLogger.w(
+                            TAG,
+                            "QQ Music vkey request failed: mid=$songMid quality=${quality.key}",
+                            error
+                        )
+                        continue
+                    }
+                    throw error
+                }
+                resolveVkeyStream(
+                    data = vkeyData,
                     songMid = songMid,
-                    mediaMid = resolvedMediaMid,
                     quality = quality,
                     guid = guid,
                     auth = auth,
-                    anonymous = false
-                )
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                if (authenticated) {
-                    lastVkeyError = error
-                    NPLogger.w(
-                        TAG,
-                        "QQ Music vkey request failed: mid=$songMid quality=${quality.key}",
-                        error
-                    )
-                    continue
-                }
-                throw error
+                    probeCandidates = probeCandidates
+                )?.let { return@withContext it }
             }
-            resolveVkeyStream(
-                data = vkeyData,
-                songMid = songMid,
-                quality = quality,
-                guid = guid,
-                auth = auth,
-                probeCandidates = probeCandidates
-            )?.let { return@withContext it }
         }
 
         if (authenticated) {
             val anonymous = loadVkey(
                 songMid = songMid,
-                mediaMid = resolvedMediaMid,
+                filename = playbackFilenames(
+                    quality = StandardQuality,
+                    songMid = songMid,
+                    mediaMid = resolvedMediaMid
+                ).single(),
                 quality = StandardQuality,
                 guid = guid,
                 auth = QQMusicAuthBundle(),
@@ -249,7 +369,11 @@ class QQMusicClient(
             val previewData = try {
                 loadVkey(
                     songMid = songMid,
-                    mediaMid = previewMediaMid,
+                    filename = playbackFilenames(
+                        quality = PreviewQuality,
+                        songMid = songMid,
+                        mediaMid = previewMediaMid
+                    ).single(),
                     quality = PreviewQuality,
                     guid = guid,
                     auth = previewAuth,
@@ -557,20 +681,13 @@ class QQMusicClient(
 
     private suspend fun loadVkey(
         songMid: String,
-        mediaMid: String,
+        filename: String,
         quality: PlaybackQuality,
         guid: String,
         auth: QQMusicAuthBundle,
         anonymous: Boolean
     ): JSONObject {
         val authenticated = !anonymous && auth.hasLoginCookies()
-        val filename = if (quality.key == PreviewQuality.key) {
-            // RS02 is the audition media MID from Song.vs[0], not the full
-            // track's file.media_mid. Mixing them makes QQ return an empty purl.
-            "${quality.prefix}$mediaMid.${quality.extension}"
-        } else {
-            "${quality.prefix}$songMid$mediaMid.${quality.extension}"
-        }
         val param = JSONObject()
             .put("filename", JSONArray().put(filename))
             .put("guid", guid)
@@ -716,10 +833,19 @@ class QQMusicClient(
         method: String,
         param: JSONObject,
         auth: QQMusicAuthBundle = authProvider(),
-        anonymousComm: Boolean = false
+        anonymousComm: Boolean = false,
+        commOverrides: JSONObject? = null
     ): JSONObject {
+        val comm = requestComm(auth, anonymous = anonymousComm)
+        commOverrides?.let { overrides ->
+            val keys = overrides.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                comm.put(key, overrides.get(key))
+            }
+        }
         val body = JSONObject()
-            .put("comm", requestComm(auth, anonymous = anonymousComm))
+            .put("comm", comm)
             .put(
                 "req_0",
                 JSONObject()
@@ -880,6 +1006,196 @@ class QQMusicClient(
         return result
     }
 
+    private fun parseRecommendationSongIds(shelf: JSONObject): List<Long> {
+        val cardSongIds = linkedSetOf<Long>()
+        val cardOtherIds = linkedSetOf<Long>()
+        val niches = shelf.optJSONArray("v_niche")
+        for (nicheIndex in 0 until (niches?.length() ?: 0)) {
+            val cards = niches?.optJSONObject(nicheIndex)?.optJSONArray("v_card")
+            for (cardIndex in 0 until (cards?.length() ?: 0)) {
+                val card = cards?.optJSONObject(cardIndex) ?: continue
+                val id = card.optString("id", "").trim().toLongOrNull()
+                    ?.takeIf { it > 0L }
+                    ?: continue
+                if (card.optInt("type", 0) == 200) {
+                    cardSongIds += id
+                } else {
+                    cardOtherIds += id
+                }
+            }
+        }
+        val result = linkedSetOf<Long>()
+        fun addCandidate(id: Long) {
+            if (id > 0L && (id !in cardOtherIds || id in cardSongIds)) {
+                result += id
+            }
+        }
+        val songList = shelf.optJSONObject("miscellany")?.opt("songList")
+        when (songList) {
+            is JSONArray -> {
+                for (index in 0 until songList.length()) {
+                    songList.optString(index, "")
+                        .trim()
+                        .toLongOrNull()
+                        ?.let(::addCandidate)
+                }
+            }
+            is String -> {
+                songList.split(',')
+                    .mapNotNull { it.trim().takeIf(String::isNotBlank)?.toLongOrNull() }
+                    .forEach(::addCandidate)
+            }
+        }
+        if (result.isEmpty()) cardSongIds.forEach(::addCandidate)
+        return result.take(MAX_RECOMMENDATION_TRACKS)
+    }
+
+    private suspend fun loadRecommendationTracks(
+        songIds: List<Long>,
+        auth: QQMusicAuthBundle,
+        commOverrides: JSONObject
+    ): Map<Long, QQMusicSong> {
+        val data = executeMusicu(
+            module = "music.trackInfo.UniformRuleCtrl",
+            method = "CgiGetTrackInfo",
+            param = JSONObject()
+                .put("ids", JSONArray(songIds))
+                .put("types", JSONArray(List(songIds.size) { 0 })),
+            auth = auth,
+            commOverrides = commOverrides
+        )
+        val tracks = data.optJSONArray("tracks")
+            ?: throw IOException("QQ Music recommendation tracks are missing")
+        return parseQQMusicSongs(tracks)
+            .associateBy { it.id }
+    }
+
+    private fun parseRecommendationPlaylists(
+        shelves: List<JSONObject>
+    ): List<QQMusicRecommendationPlaylist> {
+        val result = linkedMapOf<Long, QQMusicRecommendationPlaylist>()
+        shelves.forEach { shelf ->
+            val niches = shelf.optJSONArray("v_niche")
+            for (nicheIndex in 0 until (niches?.length() ?: 0)) {
+                val cards = niches?.optJSONObject(nicheIndex)?.optJSONArray("v_card")
+                for (cardIndex in 0 until (cards?.length() ?: 0)) {
+                    val card = cards?.optJSONObject(cardIndex) ?: continue
+                    if (
+                        card.optInt("type", 0) != 500 ||
+                        card.optInt("subtype", 0) != 0 ||
+                        card.optInt("jumptype", 0) != 10014
+                    ) {
+                        continue
+                    }
+                    val id = card.optString("id", "").trim().toLongOrNull()
+                        ?.takeIf { it > 0L }
+                        ?: continue
+                    val name = card.firstNonBlank("title", "name", "dissname")
+                        ?: continue
+                    result.putIfAbsent(
+                        id,
+                        QQMusicRecommendationPlaylist(
+                            id = id,
+                            name = name,
+                            coverUrl = normalizeQQMusicImageUrl(
+                                card.firstNonBlank("cover", "coverUrl", "pic", "picurl", "logo")
+                            ).orEmpty(),
+                            playCount = card.flexibleLong("cnt", "count", "play_count")
+                                .coerceAtLeast(0L),
+                            trackCount = card.flexibleInt("song_cnt", "songnum", "track_count")
+                                .coerceAtLeast(0)
+                        )
+                    )
+                }
+            }
+        }
+        return result.values.take(MAX_RECOMMENDATION_PLAYLISTS)
+    }
+
+    private suspend fun loadRecommendationSquarePlaylists(
+        auth: QQMusicAuthBundle,
+        commOverrides: JSONObject
+    ): List<QQMusicRecommendationPlaylist> {
+        val result = linkedMapOf<Long, QQMusicRecommendationPlaylist>()
+        for (page in 0 until MAX_RECOMMENDATION_PLAYLIST_PAGES) {
+            val data = executeMusicu(
+                module = "music.playlist.PlaylistSquare",
+                method = "GetRecommendFeed",
+                param = JSONObject()
+                    .put("From", page * RECOMMENDATION_PLAYLIST_PAGE_SIZE)
+                    .put("Size", RECOMMENDATION_PLAYLIST_PAGE_SIZE),
+                auth = auth,
+                commOverrides = commOverrides
+            )
+            val playlists = parseRecommendationSquarePlaylists(data)
+            playlists.forEach { playlist ->
+                result.putIfAbsent(playlist.id, playlist)
+            }
+            if (
+                playlists.isEmpty() ||
+                !data.optBoolean("HasMore", false) ||
+                result.size >= MAX_RECOMMENDATION_PLAYLISTS
+            ) {
+                break
+            }
+        }
+        return result.values.take(MAX_RECOMMENDATION_PLAYLISTS)
+    }
+
+    private fun parseRecommendationSquarePlaylists(
+        data: JSONObject
+    ): List<QQMusicRecommendationPlaylist> {
+        val entries = data.optJSONArray("List") ?: return emptyList()
+        val result = mutableListOf<QQMusicRecommendationPlaylist>()
+        for (index in 0 until entries.length()) {
+            val entry = entries.optJSONObject(index) ?: continue
+            val basic = entry.optJSONObject("Playlist")
+                ?.optJSONObject("basic")
+                ?: entry.optJSONObject("basic")
+                ?: continue
+            val id = basic.flexibleLong("tid", "id", "dissid")
+                .takeIf { it > 0L }
+                ?: continue
+            val name = basic.firstNonBlank("title", "name", "dissname") ?: continue
+            val cover = basic.optJSONObject("cover")
+                ?.firstNonBlank("default_url", "url", "picurl")
+                ?: basic.firstNonBlank("picurl", "cover", "logo")
+            result += QQMusicRecommendationPlaylist(
+                id = id,
+                name = name,
+                coverUrl = normalizeQQMusicImageUrl(cover).orEmpty(),
+                playCount = basic.flexibleLong("play_cnt", "listennum", "playCnt")
+                    .coerceAtLeast(0L),
+                trackCount = basic.flexibleInt("song_cnt", "songnum", "songNum")
+                    .coerceAtLeast(0)
+            )
+        }
+        return result
+    }
+
+    private fun mergeRecommendationPlaylists(
+        primary: List<QQMusicRecommendationPlaylist>,
+        additional: List<QQMusicRecommendationPlaylist>
+    ): List<QQMusicRecommendationPlaylist> {
+        val merged = linkedMapOf<Long, QQMusicRecommendationPlaylist>()
+        (primary + additional).forEach { playlist ->
+            merged.putIfAbsent(playlist.id, playlist)
+        }
+        return merged.values.take(MAX_RECOMMENDATION_PLAYLISTS)
+    }
+
+    private fun recommendationCommOverrides(): JSONObject = JSONObject()
+        .put("format", "json")
+        .put("ct", 20)
+        .put("cv", 2276)
+        .put("platform", "wk_v17")
+        .put("inCharset", "utf-8")
+        .put("outCharset", "utf-8")
+        .put("notice", 0)
+        .put("needNewCode", 1)
+        .put("g_tk", 0)
+        .put("g_tk_new_20200303", 0)
+
     private fun parseQQMusicSong(raw: JSONObject): QQMusicSong? {
         val value = raw.optJSONObject("musicData")
             ?: raw.optJSONObject("songInfo")
@@ -900,13 +1216,20 @@ class QQMusicClient(
         val mediaMid = file.firstNonBlank("media_mid")
             ?: value.firstNonBlank("strMediaMid", "media_mid", "mediaMid")
             .orEmpty()
-        val previewMediaMid = value.optJSONArray("vs")
-            ?.let { versions ->
-                (0 until versions.length()).firstNotNullOfOrNull { index ->
-                    versions.optString(index).trim().takeIf(String::isNotBlank)
-                }
+        val versions = value.optJSONArray("vs")
+        val previewMediaMid = versions?.let { values ->
+            (0 until values.length()).firstNotNullOfOrNull { index ->
+                values.optString(index).trim().takeIf(String::isNotBlank)
             }
-            .orEmpty()
+        }.orEmpty()
+        val masterMediaMid = versions?.qualityMediaMidAt(3).orEmpty()
+        val hiresMediaMid = versions?.qualityMediaMidAt(4).orEmpty()
+        val atmos71MediaMid = versions?.qualityMediaMidAt(24).orEmpty()
+        val dtsMediaMid = versions?.qualityMediaMidAt(30).orEmpty()
+        val sizeNew = file.optJSONArray("size_new")
+        fun sizeNewAt(index: Int): Long = sizeNew?.optLong(index, 0L)
+            ?.takeIf { it > 0L }
+            ?: 0L
         val numericId = value.flexibleLong("id", "songid", "songId")
             .takeIf { it > 0L }
             ?: stableQQMusicNumericId(mid)
@@ -931,13 +1254,30 @@ class QQMusicClient(
             size128 = file.flexibleLong("size_128mp3")
                 .takeIf { it > 0L }
                 ?: value.flexibleLong("size128"),
+            size192Ogg = file.flexibleLong("size_192ogg")
+                .takeIf { it > 0L }
+                ?: 0L,
             size320 = file.flexibleLong("size_320mp3")
                 .takeIf { it > 0L }
                 ?: value.flexibleLong("size320"),
             sizeFlac = file.flexibleLong("size_flac")
                 .takeIf { it > 0L }
                 ?: value.flexibleLong("sizeflac"),
-            previewMediaMid = previewMediaMid
+            sizeOgg320 = sizeNewAt(3),
+            sizeOgg640 = sizeNewAt(5),
+            sizeDolby = file.flexibleLong("size_dolby")
+                .takeIf { it > 0L }
+                ?: 0L,
+            previewMediaMid = previewMediaMid,
+            masterMediaMid = masterMediaMid,
+            hiresMediaMid = hiresMediaMid,
+            atmos71MediaMid = atmos71MediaMid,
+            dtsMediaMid = dtsMediaMid,
+            sizeMaster = sizeNewAt(0),
+            sizeHires = sizeNewAt(1),
+            sizeAtmos51 = sizeNewAt(2),
+            sizeAtmos71 = sizeNewAt(6),
+            sizeDtsx = sizeNewAt(9)
         )
     }
 
@@ -975,11 +1315,129 @@ class QQMusicClient(
     private fun playbackQualityFallbacks(preferredQuality: String): List<PlaybackQuality> {
         val preferred = preferredQuality.trim().lowercase(Locale.US)
         return when (preferred) {
-            "lossless", "hires", "jyeffect", "sky", "jymaster", "flac" ->
-                listOf(FlacQuality, Mp3320Quality, StandardQuality)
-            "exhigh", "higher", "320", "320k" ->
-                listOf(Mp3320Quality, StandardQuality)
+            "master", "jymaster" ->
+                listOf(
+                    MasterQuality,
+                    HiresQuality,
+                    Atmos71Quality,
+                    Atmos51Quality,
+                    DolbyQuality,
+                    DtsxQuality,
+                    FlacQuality,
+                    Ogg640Quality,
+                    Ogg320Quality,
+                    Mp3320Quality,
+                    Ogg192Quality,
+                    StandardQuality
+                )
+            "hires", "jyeffect", "flac24bit", "hi-res" ->
+                listOf(
+                    HiresQuality,
+                    FlacQuality,
+                    Ogg640Quality,
+                    Ogg320Quality,
+                    Ogg192Quality,
+                    StandardQuality
+                )
+            "atmos71", "atmos_71" ->
+                listOf(
+                    Atmos71Quality,
+                    Atmos51Quality,
+                    FlacQuality,
+                    Ogg320Quality,
+                    Ogg192Quality,
+                    StandardQuality
+                )
+            "atmos51", "atmos_51", "atmos", "sky" ->
+                listOf(
+                    Atmos51Quality,
+                    Atmos71Quality,
+                    FlacQuality,
+                    Ogg320Quality,
+                    Ogg192Quality,
+                    StandardQuality
+                )
+            "dolby" ->
+                listOf(
+                    DolbyQuality,
+                    Atmos71Quality,
+                    Atmos51Quality,
+                    FlacQuality,
+                    Ogg320Quality,
+                    Ogg192Quality,
+                    StandardQuality
+                )
+            "dtsx", "dts", "dts_x" ->
+                listOf(
+                    DtsxQuality,
+                    Atmos71Quality,
+                    Atmos51Quality,
+                    FlacQuality,
+                    Ogg320Quality,
+                    Ogg192Quality,
+                    StandardQuality
+                )
+            "lossless", "flac" ->
+                listOf(
+                    FlacQuality,
+                    Ogg640Quality,
+                    Ogg320Quality,
+                    Ogg192Quality,
+                    StandardQuality
+                )
+            "exhigh", "320", "320k" ->
+                listOf(
+                    Ogg320Quality,
+                    Mp3320Quality,
+                    Ogg192Quality,
+                    StandardQuality
+                )
+            "higher", "192", "192k" ->
+                listOf(Ogg192Quality, StandardQuality)
             else -> listOf(StandardQuality)
+        }
+    }
+
+    private fun qualityMediaMid(
+        quality: PlaybackQuality,
+        songDetail: QQMusicSong?,
+        fallbackMediaMid: String
+    ): String? {
+        val dedicatedMediaMid = when (quality.mediaRole) {
+            QualityMediaRole.BASE -> null
+            QualityMediaRole.MASTER -> songDetail?.masterMediaMid
+            QualityMediaRole.HIRES -> songDetail?.hiresMediaMid
+            QualityMediaRole.ATMOS_71 -> songDetail?.atmos71MediaMid
+            QualityMediaRole.DTS_X -> songDetail?.dtsMediaMid
+        }?.trim()?.takeIf(String::isNotBlank)
+        return when (quality.mediaRole) {
+            QualityMediaRole.BASE -> fallbackMediaMid
+            else -> dedicatedMediaMid
+        }
+    }
+
+    private fun playbackFilenames(
+        quality: PlaybackQuality,
+        songMid: String,
+        mediaMid: String
+    ): List<String> {
+        val resolvedMediaMid = mediaMid.trim().ifBlank { songMid }
+        return when (quality.key) {
+            PreviewQuality.key -> listOf(
+                "${quality.prefix}$resolvedMediaMid.${quality.extension}"
+            )
+            else -> if (quality.filenameLayout == QualityFilenameLayout.MEDIA_ONLY) {
+                buildList {
+                    // Advanced formats use their dedicated media MID. Keep the
+                    // song-MID prefix as a compatibility fallback for older data.
+                    add("${quality.prefix}$resolvedMediaMid.${quality.extension}")
+                    if (resolvedMediaMid != songMid) {
+                        add("${quality.prefix}$songMid$resolvedMediaMid.${quality.extension}")
+                    }
+                }.distinct()
+            } else {
+                listOf("${quality.prefix}$songMid$resolvedMediaMid.${quality.extension}")
+            }
         }
     }
 
@@ -1037,10 +1495,24 @@ private data class PlaybackQuality(
     val extension: String,
     val mimeType: String,
     val key: String,
-    val size: Long = 0L
+    val mediaRole: QualityMediaRole = QualityMediaRole.BASE,
+    val filenameLayout: QualityFilenameLayout = QualityFilenameLayout.SONG_AND_MEDIA
 )
 
 private data class StreamProbe(val contentLength: Long?)
+
+private enum class QualityMediaRole {
+    BASE,
+    MASTER,
+    HIRES,
+    ATMOS_71,
+    DTS_X
+}
+
+private enum class QualityFilenameLayout {
+    SONG_AND_MEDIA,
+    MEDIA_ONLY
+}
 
 private val StandardQuality = PlaybackQuality(
     prefix = "M500",
@@ -1048,16 +1520,80 @@ private val StandardQuality = PlaybackQuality(
     mimeType = "audio/mpeg",
     key = "standard"
 )
+private val Ogg192Quality = PlaybackQuality(
+    prefix = "O600",
+    extension = "ogg",
+    mimeType = "audio/ogg",
+    key = "higher"
+)
+private val Ogg320Quality = PlaybackQuality(
+    prefix = "O800",
+    extension = "ogg",
+    mimeType = "audio/ogg",
+    key = "exhigh"
+)
 private val Mp3320Quality = PlaybackQuality(
     prefix = "M800",
     extension = "mp3",
     mimeType = "audio/mpeg",
     key = "exhigh"
 )
+private val MasterQuality = PlaybackQuality(
+    prefix = "AI00",
+    extension = "flac",
+    mimeType = "audio/flac",
+    key = "master",
+    mediaRole = QualityMediaRole.MASTER,
+    filenameLayout = QualityFilenameLayout.MEDIA_ONLY
+)
+private val HiresQuality = PlaybackQuality(
+    prefix = "Q000",
+    extension = "flac",
+    mimeType = "audio/flac",
+    key = "hires",
+    mediaRole = QualityMediaRole.HIRES,
+    filenameLayout = QualityFilenameLayout.MEDIA_ONLY
+)
+private val Atmos51Quality = PlaybackQuality(
+    prefix = "Q001",
+    extension = "flac",
+    mimeType = "audio/flac",
+    key = "atmos51",
+    filenameLayout = QualityFilenameLayout.MEDIA_ONLY
+)
+private val Atmos71Quality = PlaybackQuality(
+    prefix = "Q003",
+    extension = "ogg",
+    mimeType = "audio/ogg",
+    key = "atmos71",
+    mediaRole = QualityMediaRole.ATMOS_71,
+    filenameLayout = QualityFilenameLayout.MEDIA_ONLY
+)
+private val DolbyQuality = PlaybackQuality(
+    prefix = "D004",
+    extension = "mp4",
+    mimeType = "audio/mp4",
+    key = "dolby",
+    filenameLayout = QualityFilenameLayout.MEDIA_ONLY
+)
+private val DtsxQuality = PlaybackQuality(
+    prefix = "DT03",
+    extension = "mp4",
+    mimeType = "audio/mp4",
+    key = "dtsx",
+    mediaRole = QualityMediaRole.DTS_X,
+    filenameLayout = QualityFilenameLayout.MEDIA_ONLY
+)
 private val FlacQuality = PlaybackQuality(
     prefix = "F000",
     extension = "flac",
     mimeType = "audio/flac",
+    key = "lossless"
+)
+private val Ogg640Quality = PlaybackQuality(
+    prefix = "O801",
+    extension = "ogg",
+    mimeType = "audio/ogg",
     key = "lossless"
 )
 private val PreviewQuality = PlaybackQuality(
@@ -1066,6 +1602,9 @@ private val PreviewQuality = PlaybackQuality(
     mimeType = "audio/mpeg",
     key = "preview"
 )
+
+private fun JSONArray.qualityMediaMidAt(index: Int): String =
+    optString(index, "").trim().takeIf(String::isNotBlank).orEmpty()
 
 private fun JSONObject.flexibleLong(vararg keys: String): Long {
     keys.forEach { key ->

@@ -2,6 +2,7 @@ package moe.ouom.neriplayer.ui.screen.tab.settings.playback
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import moe.ouom.neriplayer.common.R as CoreCommonR
 import moe.ouom.neriplayer.data.settings.playback.normalizeMobileDataBiliAudioQuality
 import moe.ouom.neriplayer.data.settings.playback.normalizeMobileDataNeteaseAudioQuality
@@ -34,10 +35,35 @@ internal fun biliQualityLabelRes(value: String): Int? =
 
 internal fun qqMusicQualityLabelRes(value: String): Int? = when (value) {
     "standard" -> CoreCommonR.string.settings_audio_quality_standard
-    "exhigh" -> CoreCommonR.string.quality_very_high
+    "higher" -> CoreCommonR.string.quality_qq_music_hq_192
+    "exhigh" -> CoreCommonR.string.quality_qq_music_hq_320
     "lossless" -> CoreCommonR.string.quality_lossless
+    "hires" -> CoreCommonR.string.quality_qq_music_hires
+    "atmos51" -> CoreCommonR.string.quality_qq_music_atmos_51
+    "atmos71" -> CoreCommonR.string.quality_qq_music_atmos_71
+    "dolby" -> CoreCommonR.string.quality_dolby
+    "dtsx" -> CoreCommonR.string.quality_qq_music_dtsx
+    "master" -> CoreCommonR.string.quality_qq_music_master
     else -> null
 }
+
+@Composable
+internal fun qqMusicQualityLabelText(value: String): String =
+    qqMusicQualityLabelRes(value)?.let { stringResource(it) } ?: value
+
+@Composable
+internal fun qqMusicQualityOptions(): List<Pair<String, String>> = listOf(
+    "standard" to stringResource(CoreCommonR.string.settings_audio_quality_standard),
+    "higher" to stringResource(CoreCommonR.string.quality_qq_music_hq_192),
+    "exhigh" to stringResource(CoreCommonR.string.quality_qq_music_hq_320),
+    "lossless" to stringResource(CoreCommonR.string.quality_lossless),
+    "hires" to stringResource(CoreCommonR.string.quality_qq_music_hires),
+    "atmos51" to stringResource(CoreCommonR.string.quality_qq_music_atmos_51),
+    "atmos71" to stringResource(CoreCommonR.string.quality_qq_music_atmos_71),
+    "dolby" to stringResource(CoreCommonR.string.quality_dolby),
+    "dtsx" to stringResource(CoreCommonR.string.quality_qq_music_dtsx),
+    "master" to stringResource(CoreCommonR.string.quality_qq_music_master)
+)
 
 private fun biliPremiumQualityLabelRes(value: String): Int? = when (value) {
     "dolby" -> CoreCommonR.string.settings_audio_quality_dolby

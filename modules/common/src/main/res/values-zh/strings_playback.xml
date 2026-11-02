@@ -52,6 +52,13 @@
     <string name="quality_high">较高</string>
     <string name="quality_very_high">极高</string>
     <string name="quality_lossless">无损</string>
+    <string name="quality_qq_music_master">臻品母带</string>
+    <string name="quality_qq_music_hires">臻品音质</string>
+    <string name="quality_qq_music_hq_192">HQ 192K</string>
+    <string name="quality_qq_music_hq_320">HQ 320K</string>
+    <string name="quality_qq_music_atmos_51">臻品全景声 5.1</string>
+    <string name="quality_qq_music_atmos_71">臻品全景声 7.1</string>
+    <string name="quality_qq_music_dtsx">DTS:X</string>
     <string name="quality_hires">Hi-Res</string>
     <string name="quality_dolby">杜比全景声</string>
     <string name="quality_surround">沉浸环绕声</string>

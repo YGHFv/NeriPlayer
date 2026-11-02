@@ -184,10 +184,12 @@ import moe.ouom.neriplayer.ui.viewmodel.tab.ExploreViewModel
 import moe.ouom.neriplayer.ui.viewmodel.tab.BiliPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.NeteaseExploreSearchType
 import moe.ouom.neriplayer.ui.viewmodel.tab.PlaylistSummary
+import moe.ouom.neriplayer.ui.viewmodel.tab.QQMusicPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.SearchSource
 import moe.ouom.neriplayer.ui.viewmodel.tab.YouTubeExploreSearchType
 import moe.ouom.neriplayer.ui.viewmodel.tab.YouTubeMusicPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.shouldLoadExploreSearchMore
+import moe.ouom.neriplayer.ui.viewmodel.tab.toQQMusicPlaylist
 import moe.ouom.neriplayer.ui.util.currentWindowWidthDp
 import moe.ouom.neriplayer.ui.util.copyPlainTextSafely
 import moe.ouom.neriplayer.ui.haptic.HapticIconButton
@@ -386,6 +388,7 @@ fun ExploreScreen(
     onYouTubeMusicPlaylistClick: (YouTubeMusicPlaylist) -> Unit = {},
     onYouTubeCreatorClick: (YouTubeMusicCreatorSummary) -> Unit = {},
     onNeteaseArtistClick: (NeteaseArtistSummary) -> Unit = {},
+    onQqMusicPlaylistClick: (QQMusicPlaylist) -> Unit = {},
     onSongClick: (List<SongItem>, Int) -> Unit = { _, _ -> },
     onSongPlayPreservingQueue: (SongItem) -> Unit = {},
     onSongPlayNext: (SongItem) -> Unit = {},
@@ -477,6 +480,30 @@ fun ExploreScreen(
     )
     val miniPlayerHeight = LocalMiniPlayerHeight.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val favoriteAddedText = stringResource(CoreCommonR.string.favorite_added)
+    val favoriteRemovedText = stringResource(CoreCommonR.string.favorite_removed)
+
+    fun toggleQQMusicDiscoverFavorite(song: SongItem, isFavorite: Boolean) {
+        if (!localPlaylistsReady) return
+        scope.launchLocalPlaylistMutation("toggleFavoriteFromQQMusicDiscover") {
+            if (isFavorite) {
+                repo.removeFromFavorites(song)
+            } else {
+                repo.addToFavorites(song)
+            }
+        }
+        scope.launch {
+            snackbarHostState.showNeriSnackbar(
+                if (isFavorite) favoriteRemovedText else favoriteAddedText
+            )
+        }
+    }
+
+    val showExploreSnackbar: (String) -> Unit = { message ->
+        scope.launch {
+            snackbarHostState.showNeriSnackbar(message)
+        }
+    }
     val windowWidthDp = currentWindowWidthDp()
     val isTabletLayout = windowWidthDp >= 720.dp
     val searchPanelHorizontalPadding = if (isTabletLayout) 28.dp else 16.dp
@@ -541,6 +568,9 @@ fun ExploreScreen(
             ?: return@LaunchedEffect
         if (ui.selectedSearchSource != currentSource) {
             vm.setSearchSource(currentSource)
+        }
+        if (currentSource == SearchSource.QQ_MUSIC && ui.isQQMusicLoggedIn) {
+            vm.loadQQMusicDiscover()
         }
         if (currentSource == SearchSource.YOUTUBE_MUSIC && ui.ytMusicPlaylists.isEmpty()) {
             vm.loadYtMusicPlaylists()
@@ -714,6 +744,12 @@ fun ExploreScreen(
                     shouldAllowCollapsingTopAppBar(
                         canScrollForward = youtubeGridState.canScrollForward,
                         canScrollBackward = youtubeGridState.canScrollBackward,
+                        collapsedFraction = topAppBarState.collapsedFraction
+                    )
+                ui.selectedSearchSource == SearchSource.QQ_MUSIC ->
+                    shouldAllowCollapsingTopAppBar(
+                        canScrollForward = gridState.canScrollForward,
+                        canScrollBackward = gridState.canScrollBackward,
                         collapsedFraction = topAppBarState.collapsedFraction
                     )
                 else -> shouldAllowCollapsingTopAppBar(
@@ -1163,10 +1199,27 @@ fun ExploreScreen(
                             }
                         }
                         SearchSource.QQ_MUSIC -> {
-                            Box(Modifier.fillMaxSize(), Alignment.Center) {
-                                Text(
-                                    text = stringResource(AppR.string.qq_music_explore_hint),
-                                    style = MaterialTheme.typography.bodyLarge
+                            if (!ui.isQQMusicLoggedIn) {
+                                Box(Modifier.fillMaxSize(), Alignment.Center) {
+                                    Text(
+                                        text = stringResource(AppR.string.qq_music_explore_login_hint),
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
+                            } else {
+                                QQMusicExploreContent(
+                                    state = ui.qqMusicDiscover,
+                                    onRetry = { vm.loadQQMusicDiscover(force = true) },
+                                    onSongClick = onSongClick,
+                                    favoriteSongLookup = favoriteSongLookup,
+                                    onFavoriteToggle = ::toggleQQMusicDiscoverFavorite,
+                                    onShowSnackbar = showExploreSnackbar,
+                                    onPlaylistClick = { playlist ->
+                                        onQqMusicPlaylistClick(playlist.toQQMusicPlaylist())
+                                    },
+                                    offlineMode = offlineMode,
+                                    gridState = gridState,
+                                    isTabletLayout = isTabletLayout
                                 )
                             }
                         }

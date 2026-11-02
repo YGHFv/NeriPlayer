@@ -72,6 +72,7 @@ import moe.ouom.neriplayer.ui.screen.artist.YouTubeMusicCreatorItemsScreen
 import moe.ouom.neriplayer.ui.screen.playlist.BiliPlaylistDetailScreen
 import moe.ouom.neriplayer.ui.screen.playlist.NeteaseAlbumDetailScreen
 import moe.ouom.neriplayer.ui.screen.playlist.NeteasePlaylistDetailScreen
+import moe.ouom.neriplayer.ui.screen.playlist.QQMusicPlaylistDetailScreen
 import moe.ouom.neriplayer.ui.screen.playlist.YouTubeMusicPlaylistDetailScreen
 import moe.ouom.neriplayer.ui.screen.tab.explore.ExploreScreen
 import moe.ouom.neriplayer.ui.navigation.shouldSuppressRestoredMainTabHostEntry
@@ -79,12 +80,14 @@ import moe.ouom.neriplayer.ui.viewmodel.playlist.BiliVideoItem
 import moe.ouom.neriplayer.ui.viewmodel.tab.AlbumSummary
 import moe.ouom.neriplayer.ui.viewmodel.tab.BiliPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.PlaylistSummary
+import moe.ouom.neriplayer.ui.viewmodel.tab.QQMusicPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.YouTubeMusicPlaylist
 import moe.ouom.neriplayer.util.media.CoverArtColorCache
 
 // 探索页选中项
 internal sealed class ExploreSelectedItem {
     data class Netease(val playlist: PlaylistSummary) : ExploreSelectedItem()
+    data class QqMusic(val playlist: QQMusicPlaylist) : ExploreSelectedItem()
     data class NeteaseArtist(val artist: NeteaseArtistSummary) : ExploreSelectedItem()
     data class NeteaseArtistAlbum(
         val artist: NeteaseArtistSummary,
@@ -410,6 +413,19 @@ fun ExploreHostScreen(
                                     captureExploreScrollPosition()
                                     openExploreSelectedItem(ExploreSelectedItem.NeteaseArtist(artist))
                                 },
+                                onQqMusicPlaylistClick = { playlist ->
+                                    captureExploreScrollPosition()
+                                    AppContainer.launchBackgroundIo {
+                                        AppContainer.playlistUsageRepo.recordOpen(
+                                            id = playlist.id,
+                                            name = playlist.title,
+                                            picUrl = playlist.coverUrl,
+                                            trackCount = playlist.trackCount,
+                                            source = "qqmusic"
+                                        )
+                                    }
+                                    openExploreSelectedItem(ExploreSelectedItem.QqMusic(playlist))
+                                },
                                 onSongClick = onSongClick,
                                 onSongPlayPreservingQueue = onSongPlayPreservingQueue,
                                 onSongPlayNext = onSongPlayNext,
@@ -458,6 +474,15 @@ fun ExploreHostScreen(
                             is ExploreSelectedItem.NeteaseArtistAlbum -> {
                                 NeteaseAlbumDetailScreen(
                                     album = current.album,
+                                    onBack = ::closeSelectedDetail,
+                                    onSongClick = onSongClick,
+                                    offlineMode = offlineMode
+                                )
+                            }
+
+                            is ExploreSelectedItem.QqMusic -> {
+                                QQMusicPlaylistDetailScreen(
+                                    playlist = current.playlist,
                                     onBack = ::closeSelectedDetail,
                                     onSongClick = onSongClick,
                                     offlineMode = offlineMode

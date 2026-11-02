@@ -3,6 +3,7 @@ package moe.ouom.neriplayer.ui.screen.tab
 import moe.ouom.neriplayer.common.R as CoreCommonR
 import moe.ouom.neriplayer.ui.screen.tab.settings.playback.biliQualityLabelRes
 import moe.ouom.neriplayer.ui.screen.tab.settings.playback.neteaseQualityLabelRes
+import moe.ouom.neriplayer.ui.screen.tab.settings.playback.qqMusicQualityLabelRes
 import moe.ouom.neriplayer.ui.screen.tab.settings.playback.youtubeQualityLabelRes
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -36,6 +37,25 @@ class SettingsQualityPresentationTest {
             assertEquals(label, youtubeQualityLabelRes(quality))
         }
         assertEquals(null, youtubeQualityLabelRes("future-tier"))
+    }
+
+    @Test
+    fun `qq music quality labels cover every supported tier`() {
+        mapOf(
+            "standard" to CoreCommonR.string.settings_audio_quality_standard,
+            "higher" to CoreCommonR.string.quality_qq_music_hq_192,
+            "exhigh" to CoreCommonR.string.quality_qq_music_hq_320,
+            "lossless" to CoreCommonR.string.quality_lossless,
+            "hires" to CoreCommonR.string.quality_qq_music_hires,
+            "atmos51" to CoreCommonR.string.quality_qq_music_atmos_51,
+            "atmos71" to CoreCommonR.string.quality_qq_music_atmos_71,
+            "dolby" to CoreCommonR.string.quality_dolby,
+            "dtsx" to CoreCommonR.string.quality_qq_music_dtsx,
+            "master" to CoreCommonR.string.quality_qq_music_master
+        ).forEach { (quality, label) ->
+            assertEquals(label, qqMusicQualityLabelRes(quality))
+        }
+        assertEquals(null, qqMusicQualityLabelRes("future-tier"))
     }
 
     @Test

@@ -50,7 +50,10 @@ internal fun buildSettingsSearchEntries(
             it.ui != SettingUiType.None &&
                 it.titleRes != 0 &&
                 it.keyName !in unavailableSettingKeys &&
-                (!internationalEnabled || it.keyName != "home_card_bilibili")
+                (!internationalEnabled || it.keyName !in setOf(
+                    "home_card_bilibili",
+                    "home_card_qq_music"
+                ))
         }
         .mapNotNull { setting ->
             val page = setting.settingsPage() ?: return@mapNotNull null
@@ -359,7 +362,8 @@ private val PersonalizationHomeTargets = setOf(
     "setting:home_card_trending",
     "setting:home_card_radar",
     "setting:home_card_recommended",
-    "setting:home_card_bilibili"
+    "setting:home_card_bilibili",
+    "setting:home_card_qq_music"
 )
 
 private val PersonalizationPlaybackInfoTargets = setOf(
@@ -938,6 +942,7 @@ private val SettingSearchAliases = mapOf(
     "auto_show_keyboard" to listOf("keyboard", "input", "shurufa", "jianpan"),
     "home_card_continue" to listOf("continue", "recent", "jixu"),
     "home_card_bilibili" to listOf("bilibili", "bili", "哔哩哔哩", "B站", "音乐榜", "热门视频"),
+    "home_card_qq_music" to listOf("qq", "qqmusic", "qq 音乐", "推荐", "歌单", "discovery"),
     "home_card_trending" to listOf(
         "trending",
         "charts",

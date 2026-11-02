@@ -454,8 +454,10 @@ private fun NeriAppContent(
     val showHomeRadarCard by repo.homeCardRadarFlow.collectAsStateWithLifecycle(initialValue = true)
     val showHomeRecommendedCard by repo.homeCardRecommendedFlow.collectAsStateWithLifecycle(initialValue = true)
     val homeBilibiliCardEnabled by repo.homeCardBilibiliFlow.collectAsStateWithLifecycle(initialValue = true)
+    val homeQqMusicCardEnabled by repo.homeCardQqMusicFlow.collectAsStateWithLifecycle(initialValue = true)
     val internationalizationEnabled by repo.internationalizationEnabledFlow.collectAsStateWithLifecycle(initialValue = false)
     val showHomeBilibiliCard = homeBilibiliCardEnabled && !internationalizationEnabled
+    val showHomeQqMusicCard = homeQqMusicCardEnabled && !internationalizationEnabled
     val storedUsbExclusivePlayback by repo.usbExclusivePlaybackFlow
         .collectAsStateWithLifecycle(initialValue = null)
     val usbExclusivePlayback = storedUsbExclusivePlayback
@@ -480,7 +482,8 @@ private fun NeriAppContent(
             showHomeTrendingCard ||
             showHomeRadarCard ||
             showHomeRecommendedCard ||
-            showHomeBilibiliCard
+            showHomeBilibiliCard ||
+            showHomeQqMusicCard
     var pendingFollowSystemDark by remember { mutableStateOf<Boolean?>(null) }
     var pendingForceDark by remember { mutableStateOf<Boolean?>(null) }
     var themeRevealSnapshot by remember { mutableStateOf<ImageBitmap?>(null) }
@@ -1473,6 +1476,7 @@ private fun NeriAppContent(
                         showRadarCard = showHomeRadarCard,
                         showRecommendedCard = showHomeRecommendedCard,
                         showBilibiliCard = showHomeBilibiliCard,
+                        showQqMusicCard = showHomeQqMusicCard,
                         homeUsageEntries = homeUsageSnapshot.entries,
                         homeUsageLoaded = homeUsageSnapshot.isLoaded,
                         offlineMode = offlineMode,

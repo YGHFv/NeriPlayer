@@ -58,6 +58,32 @@ class AutoSettingsGeneratedTest {
     }
 
     @Test
+    fun homeQqMusicVisibilityIsRegisteredForPersistenceAndBackup() {
+        val setting = AutoSettingsMetadata.setting("home_card_qq_music")
+        assertEquals(AutoSettingsSections.personalization, setting?.section)
+        assertTrue(AutoSettingsBackupKeys.booleanKeys.any { it.name == "home_card_qq_music" })
+    }
+
+    @Test
+    fun homeQqMusicVisibilityDefaultsOnAndRetainsAnExplicitOptOut() = runBlocking {
+        val filesDir = File.createTempFile("neriplayer-home-qq-music", "").apply {
+            delete()
+            mkdirs()
+            deleteOnExit()
+        }
+        val context = mock(Context::class.java)
+        `when`(context.filesDir).thenReturn(filesDir)
+        `when`(context.applicationContext).thenReturn(context)
+        val repository = AutoSettingsRepository(context)
+
+        assertTrue(repository.homeCardQqMusicFlow.first())
+        repository.setHomeCardQqMusic(false)
+        assertEquals(false, AutoSettingsRepository(context).homeCardQqMusicFlow.first())
+        repository.setHomeCardQqMusic(true)
+        assertTrue(repository.homeCardQqMusicFlow.first())
+    }
+
+    @Test
     fun generatedBackupKeysCoverSettingsSchema() {
         val booleanKeyNames = AutoSettingsBackupKeys.booleanKeys.map { it.name }.toSet()
         val floatKeyNames = AutoSettingsBackupKeys.floatKeys.map { it.name }.toSet()
@@ -429,8 +455,8 @@ class AutoSettingsGeneratedTest {
     fun inheritedPlaybackSectionKeepsEveryGeneratedSetting() {
         val settings = AutoSettingsMetadata.settingsIn(AutoSettingsSections.playback)
 
-        assertEquals(41, settings.size)
-        assertEquals(41, settings.map { it.keyName }.toSet().size)
+        assertEquals(42, settings.size)
+        assertEquals(42, settings.map { it.keyName }.toSet().size)
         assertEquals("playback_fade_in", settings.first().keyName)
         assertEquals(
             AutoSettingsSections.playback,

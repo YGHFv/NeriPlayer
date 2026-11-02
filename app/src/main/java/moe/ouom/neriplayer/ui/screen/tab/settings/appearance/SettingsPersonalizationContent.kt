@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.LiveTv
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.Radar
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Wallpaper
@@ -136,6 +137,8 @@ internal fun SettingsPersonalizationHomeCard(
     onShowHomeRecommendedCardChange: (Boolean) -> Unit,
     showHomeBilibiliCard: Boolean,
     onShowHomeBilibiliCardChange: (Boolean) -> Unit,
+    showHomeQqMusicCard: Boolean = true,
+    onShowHomeQqMusicCardChange: (Boolean) -> Unit = {},
     highlightTargetId: String?,
     highlightPulse: Int,
     onHighlightFinished: (() -> Unit)?
@@ -206,6 +209,18 @@ internal fun SettingsPersonalizationHomeCard(
                 onCheckedChange = onShowHomeBilibiliCardChange,
                 enabled = true,
                 targetId = "setting:home_card_bilibili",
+                highlightTargetId = highlightTargetId,
+                highlightPulse = highlightPulse,
+                onHighlightFinished = onHighlightFinished
+            )
+            SettingsHomeCardSwitch(
+                title = stringResource(CoreCommonR.string.settings_home_card_qq_music),
+                description = stringResource(CoreCommonR.string.settings_home_card_qq_music_desc),
+                icon = Icons.Outlined.MusicNote,
+                checked = showHomeQqMusicCard,
+                onCheckedChange = onShowHomeQqMusicCardChange,
+                enabled = true,
+                targetId = "setting:home_card_qq_music",
                 highlightTargetId = highlightTargetId,
                 highlightPulse = highlightPulse,
                 onHighlightFinished = onHighlightFinished

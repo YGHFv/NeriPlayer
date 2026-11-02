@@ -54,6 +54,9 @@ internal const val HomeScrollKeyYtEmptyFeedError = "home:ytmusic:empty-feed:erro
 internal const val HomeScrollKeyNeteaseRadarPlaylists = "home:netease:radar-playlists"
 internal const val HomeScrollKeyNeteaseRadarPlaylistsHeader = "$HomeScrollKeyNeteaseRadarPlaylists:header"
 internal const val HomeScrollKeyNeteaseRadarPlaylistsContent = "$HomeScrollKeyNeteaseRadarPlaylists:content"
+internal const val HomeScrollKeyQqMusicLoading = "home:qqmusic:loading"
+internal const val HomeScrollKeyQqMusicError = "home:qqmusic:error"
+internal const val HomeScrollKeyQqMusicPlaylistsHeader = "home:qqmusic:playlists:header"
 
 /**
  * 首页 Clean 风格的手机网格：至少两列，避免 20dp 页边距下自适应格只剩一列。
@@ -119,3 +122,11 @@ internal fun homeYtMusicHomeItemScrollKey(
     val stableId = item.browseId.ifBlank { item.videoId }.ifBlank { item.title }
     return "$shelfKey:item:$itemIndex:${stableId.hashCode()}"
 }
+
+internal fun homeQqMusicShelfScrollKey(
+    shelfIndex: Int,
+    title: String
+): String = "home:qqmusic:shelf:$shelfIndex:${title.hashCode()}"
+
+internal fun homeQqMusicPlaylistScrollKey(id: Long): String =
+    "home:qqmusic:playlist:$id"

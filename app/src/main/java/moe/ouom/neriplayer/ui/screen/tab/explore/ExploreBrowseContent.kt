@@ -28,6 +28,9 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -50,9 +53,16 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import moe.ouom.neriplayer.common.R as CoreCommonR
+import moe.ouom.neriplayer.ui.i18n.asString
 import moe.ouom.neriplayer.ui.navigation.LocalMiniPlayerHeight
+import moe.ouom.neriplayer.ui.screen.playlist.FavoriteSongLookup
+import moe.ouom.neriplayer.ui.screen.tab.home.QqMusicRecommendationPlaylistCard
+import moe.ouom.neriplayer.ui.screen.tab.home.ResponsiveSongPagerList
+import moe.ouom.neriplayer.ui.viewmodel.tab.QQMusicExploreState
 import moe.ouom.neriplayer.ui.viewmodel.tab.PlaylistSummary
 import moe.ouom.neriplayer.ui.viewmodel.tab.YouTubeMusicPlaylist
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicRecommendationPlaylist
+import moe.ouom.neriplayer.data.model.SongItem
 import moe.ouom.neriplayer.ui.haptic.HapticTextButton
 import moe.ouom.neriplayer.ui.screen.tab.home.PlaylistCard
 import moe.ouom.neriplayer.util.media.fastScrollableImageRequest
@@ -332,6 +342,188 @@ internal fun YouTubeMusicExploreContent(
                 }
             }
         }
+    }
+}
+
+@Composable
+internal fun QQMusicExploreContent(
+    state: QQMusicExploreState,
+    onRetry: () -> Unit,
+    onSongClick: (List<SongItem>, Int) -> Unit,
+    favoriteSongLookup: FavoriteSongLookup,
+    onFavoriteToggle: (SongItem, Boolean) -> Unit,
+    onShowSnackbar: (String) -> Unit,
+    onPlaylistClick: (QQMusicRecommendationPlaylist) -> Unit,
+    offlineMode: Boolean,
+    gridState: LazyGridState,
+    isTabletLayout: Boolean = false
+) {
+    val miniPlayerHeight = LocalMiniPlayerHeight.current
+    val hasContent = state.shelves.isNotEmpty() || state.playlists.isNotEmpty()
+    when {
+        state.loading && !hasContent -> {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(bottom = miniPlayerHeight),
+                Alignment.Center
+            ) { CircularProgressIndicator() }
+        }
+        state.error != null && !hasContent -> {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(bottom = miniPlayerHeight),
+                Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        state.error.asString(),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    HapticTextButton(onClick = onRetry) {
+                        Text(stringResource(CoreCommonR.string.action_retry))
+                    }
+                }
+            }
+        }
+        !hasContent -> {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(bottom = miniPlayerHeight),
+                Alignment.Center
+            ) {
+                Text(
+                    stringResource(AppR.string.qq_music_explore_hint),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
+        else -> {
+            val gridHorizontalPadding = if (isTabletLayout) 56.dp else 16.dp
+            val gridMinCellSize = if (isTabletLayout) 170.dp else 150.dp
+            val gridSpacing = if (isTabletLayout) 16.dp else 12.dp
+            LazyVerticalGrid(
+                state = gridState,
+                columns = GridCells.Adaptive(gridMinCellSize),
+                verticalArrangement = Arrangement.spacedBy(gridSpacing),
+                horizontalArrangement = Arrangement.spacedBy(gridSpacing),
+                contentPadding = PaddingValues(
+                    start = gridHorizontalPadding,
+                    end = gridHorizontalPadding,
+                    top = 10.dp,
+                    bottom = 16.dp + miniPlayerHeight
+                ),
+                modifier = Modifier.exploreCenteredMaxWidth(ExploreBrowseContentMaxWidth)
+            ) {
+                if (state.loading) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    }
+                }
+                state.shelves.forEachIndexed { index, shelf ->
+                    item(
+                        key = "qq-discover-shelf-header-$index",
+                        span = { GridItemSpan(maxLineSpan) }
+                    ) {
+                        QQMusicExploreSectionHeader(
+                            icon = Icons.Outlined.Bolt,
+                            title = stringResource(
+                                CoreCommonR.string.home_qq_music_recommendation_shelf,
+                                shelf.title
+                            )
+                        )
+                    }
+                    item(
+                        key = "qq-discover-shelf-content-$index",
+                        span = { GridItemSpan(maxLineSpan) }
+                    ) {
+                        ResponsiveSongPagerList(
+                            songs = shelf.songs,
+                            onSongClick = onSongClick,
+                            favoriteSongLookup = favoriteSongLookup,
+                            onFavoriteToggle = onFavoriteToggle,
+                            onShowSnackbar = onShowSnackbar,
+                            offlineMode = offlineMode
+                        )
+                    }
+                }
+                if (state.playlists.isNotEmpty()) {
+                    item(
+                        key = "qq-discover-playlists-header",
+                        span = { GridItemSpan(maxLineSpan) }
+                    ) {
+                        QQMusicExploreSectionHeader(
+                            icon = Icons.Outlined.Star,
+                            title = stringResource(CoreCommonR.string.home_qq_music_playlists)
+                        )
+                    }
+                    items(
+                        items = state.playlists,
+                        key = { playlist -> "qq-discover-playlist-${playlist.id}" }
+                    ) { playlist ->
+                        QqMusicRecommendationPlaylistCard(
+                            playlist = playlist,
+                            onClick = { onPlaylistClick(playlist) },
+                            offlineMode = offlineMode
+                        )
+                    }
+                }
+                if (state.error != null) {
+                    item(
+                        key = "qq-discover-error",
+                        span = { GridItemSpan(maxLineSpan) }
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                state.error.asString(),
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            HapticTextButton(onClick = onRetry) {
+                                Text(stringResource(CoreCommonR.string.action_retry))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QQMusicExploreSectionHeader(
+    icon: ImageVector,
+    title: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

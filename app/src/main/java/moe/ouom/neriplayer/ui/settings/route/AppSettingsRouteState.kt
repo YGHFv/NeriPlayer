@@ -110,7 +110,8 @@ internal data class AppHomeCardsSettingsState(
     val showHomeTrendingCard: Boolean,
     val showHomeRadarCard: Boolean,
     val showHomeRecommendedCard: Boolean,
-    val showHomeBilibiliCard: Boolean
+    val showHomeBilibiliCard: Boolean,
+    val showHomeQqMusicCard: Boolean
 )
 
 internal data class AppStorageSettingsState(
@@ -313,13 +314,23 @@ private fun mobileAudioQualitySettingsFlow(repo: SettingsRepository): Flow<AppMo
 
 private fun homeCardsSettingsFlow(repo: SettingsRepository): Flow<AppHomeCardsSettingsState> =
     combine(
-        repo.homeCardContinueFlow,
-        repo.homeCardTrendingFlow,
-        repo.homeCardRadarFlow,
-        repo.homeCardRecommendedFlow,
-        repo.homeCardBilibiliFlow
-    ) { v0, v1, v2, v3, v4 ->
-        AppHomeCardsSettingsState(v0, v1, v2, v3, v4)
+        listOf(
+            repo.homeCardContinueFlow,
+            repo.homeCardTrendingFlow,
+            repo.homeCardRadarFlow,
+            repo.homeCardRecommendedFlow,
+            repo.homeCardBilibiliFlow,
+            repo.homeCardQqMusicFlow
+        )
+    ) { values: Array<Boolean> ->
+        AppHomeCardsSettingsState(
+            values[0],
+            values[1],
+            values[2],
+            values[3],
+            values[4],
+            values[5]
+        )
     }
 
 private fun storageSettingsFlow(repo: SettingsRepository): Flow<AppStorageSettingsState> =
@@ -465,7 +476,8 @@ internal fun initialAppSettingsRouteState(
             showHomeTrendingCard = true,
             showHomeRadarCard = true,
             showHomeRecommendedCard = true,
-            showHomeBilibiliCard = true
+            showHomeBilibiliCard = true,
+            showHomeQqMusicCard = true
         ),
         storage = AppStorageSettingsState(
             bypassProxy = true,

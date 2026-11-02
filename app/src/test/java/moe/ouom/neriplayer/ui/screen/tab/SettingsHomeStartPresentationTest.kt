@@ -30,6 +30,23 @@ class SettingsHomeStartPresentationTest {
     }
 
     @Test
+    fun `QQ Music discovery alone keeps home available until its switch is disabled`() {
+        assertTrue(isSettingsHomeStartAvailable(false, false, false, false, false, showQqMusic = true))
+        assertFalse(isSettingsHomeStartAvailable(false, false, false, false, false, showQqMusic = false))
+        assertFalse(
+            isSettingsHomeStartAvailable(
+                false,
+                false,
+                false,
+                false,
+                false,
+                internationalEnabled = true,
+                showQqMusic = true
+            )
+        )
+    }
+
+    @Test
     fun `international mode excludes Bilibili from home availability without hiding other sections`() {
         assertFalse(isSettingsHomeStartAvailable(false, false, false, false, false, true, true))
         assertFalse(isSettingsHomeStartAvailable(false, false, false, false, false, false, true))

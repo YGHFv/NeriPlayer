@@ -53,12 +53,14 @@ import moe.ouom.neriplayer.data.model.bilibili.music.BiliMusicHotVideo
 import moe.ouom.neriplayer.data.model.bilibili.music.BiliMusicRankPeriod
 import moe.ouom.neriplayer.data.model.bilibili.music.BiliMusicRankSong
 import moe.ouom.neriplayer.data.model.bilibili.music.BiliMusicRankType
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicRecommendationPlaylist
 import moe.ouom.neriplayer.data.model.youtube.music.YouTubeMusicHomeShelf
 import moe.ouom.neriplayer.core.di.AppContainer
 import moe.ouom.neriplayer.ui.viewmodel.tab.bili.BiliMusicHomeRepository
 import moe.ouom.neriplayer.data.model.youtube.auth.YouTubeAuthBundle
 import moe.ouom.neriplayer.platform.youtube.auth.buildRefreshObserverFingerprint
 import moe.ouom.neriplayer.data.model.SongItem
+import moe.ouom.neriplayer.ui.viewmodel.playlist.toSongItem
 import moe.ouom.neriplayer.platform.netease.neteaseRadarCacheContext
 import moe.ouom.neriplayer.common.logging.NPLogger
 import java.io.IOException
@@ -210,6 +212,19 @@ data class HomeNeteasePlaylistSectionState(
     val section: HomeSectionState<PlaylistSummary> = HomeSectionState()
 )
 
+data class HomeQqMusicSongShelf(
+    val title: String,
+    val songs: List<SongItem>
+)
+
+data class HomeQqMusicState(
+    val shelves: List<HomeQqMusicSongShelf> = emptyList(),
+    val playlists: List<QQMusicRecommendationPlaylist> = emptyList(),
+    val loading: Boolean = false,
+    val error: UiText? = null,
+    val enabled: Boolean = false
+)
+
 data class HomeUiState(
     val playlistSections: List<HomeNeteasePlaylistSectionState> = emptyList(),
     val trendingSongSections: List<HomeNeteaseSongSectionState> = emptyList(),
@@ -220,6 +235,8 @@ data class HomeUiState(
     val biliMusicRank: HomeBiliMusicRankState = HomeBiliMusicRankState(),
     val biliMusicHot: HomeSectionState<BiliMusicHotVideo> = HomeSectionState(),
     val biliMusicHomeEnabled: Boolean = false,
+    val qqMusicHome: HomeQqMusicState = HomeQqMusicState(),
+    val qqMusicHomeEnabled: Boolean = false,
     val hasLogin: Boolean = false,
     val internationalizationEnabled: Boolean = false
 )
@@ -229,13 +246,22 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val repo = AppContainer.neteaseCookieRepo
     private val client = AppContainer.neteaseClient
     private val youtubeAuthRepo = AppContainer.youtubeAuthRepo
+    private val qqMusicAuthRepo = AppContainer.qqMusicAuthRepo
 
     private val initialRecommendCookies = repo.withCurrentCookies { cookies ->
         client.setPersistedCookies(cookies)
         cookies
     }
     private var hasRecommendLogin = !initialRecommendCookies["MUSIC_U"].isNullOrBlank()
-    private val _uiState = MutableStateFlow(createHomeUiState(hasRecommendLogin, loading = true))
+    private var qqMusicHomeEnabled = qqMusicAuthRepo.getAuthOnce().hasLoginCookies()
+    private var lastQqMusicAccountId = qqMusicAuthRepo.getAuthOnce().musicId
+    private val _uiState = MutableStateFlow(
+        createHomeUiState(
+            hasLogin = hasRecommendLogin,
+            qqMusicEnabled = qqMusicHomeEnabled,
+            loading = true
+        )
+    )
     val uiState: StateFlow<HomeUiState> = _uiState
 
     private var playlistJob: Job? = null
@@ -254,11 +280,17 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private var biliMusicHotJob: Job? = null
     private var biliMusicRankGeneration: Long = 0L
     private var biliMusicHotGeneration: Long = 0L
+    private var qqMusicHomeJob: Job? = null
+    private var qqMusicHomeGeneration: Long = 0L
     private var offlineMode = false
     private var biliMusicHomeEnabled = false
 
 
-    private fun createHomeUiState(hasLogin: Boolean, loading: Boolean): HomeUiState {
+    private fun createHomeUiState(
+        hasLogin: Boolean,
+        qqMusicEnabled: Boolean,
+        loading: Boolean
+    ): HomeUiState {
         return HomeUiState(
             playlistSections = createPlaylistSections(hasLogin, loading),
             trendingSongSections = createSongSections(
@@ -272,6 +304,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 loading = loading
             ),
             radarPlaylists = HomeSectionState(loading = loading),
+            qqMusicHome = HomeQqMusicState(
+                loading = loading && qqMusicEnabled,
+                enabled = qqMusicEnabled
+            ),
+            qqMusicHomeEnabled = qqMusicEnabled,
             hasLogin = hasLogin
         )
     }
@@ -388,6 +425,45 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
+        viewModelScope.launch {
+            combine(
+                qqMusicAuthRepo.authFlow,
+                AppContainer.settingsRepo.homeCardQqMusicFlow,
+                AppContainer.settingsRepo.internationalizationEnabledFlow
+            ) { auth, cardEnabled, internationalEnabled ->
+                Triple(auth, cardEnabled, internationalEnabled)
+            }.collect { (auth, cardEnabled, internationalEnabled) ->
+                val authenticated = auth.hasLoginCookies()
+                val enabled = authenticated && cardEnabled && !internationalEnabled
+                val accountId = auth.musicId
+                val accountChanged = lastQqMusicAccountId != accountId
+                lastQqMusicAccountId = accountId
+                val enabledChanged = qqMusicHomeEnabled != enabled
+                qqMusicHomeEnabled = enabled
+                _uiState.update { state ->
+                    state.copy(
+                        qqMusicHomeEnabled = enabled,
+                        qqMusicHome = when {
+                            !enabled -> HomeQqMusicState()
+                            accountChanged -> HomeQqMusicState(enabled = true)
+                            else -> state.qqMusicHome.copy(enabled = true)
+                        }
+                    )
+                }
+                if (!enabled) {
+                    cancelQqMusicHomeJob()
+                    return@collect
+                }
+                if (
+                    homeRecommendationsBootstrapped &&
+                    (enabledChanged || accountChanged) &&
+                    enabled
+                ) {
+                    refreshQqMusicHome(force = true)
+                }
+            }
+        }
+
         // 观察国际化设置变化, 切换推荐源
         viewModelScope.launch {
             combine(
@@ -406,12 +482,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 )
                 if (useYouTubeHome) {
                     refreshYtMusicHome()
+                    cancelQqMusicHomeJob()
                 } else {
                     cancelYouTubeHomeJobs()
                     _uiState.value = _uiState.value.copy(
                         ytMusicPlaylists = HomeSectionState(),
                         ytMusicHomeShelves = HomeSectionState()
                     )
+                    refreshQqMusicHome(force = false)
                 }
             }
         }
@@ -496,6 +574,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }
             // 非国际化首页按保存的开关独立加载 B 站音乐模块
             loadBiliMusicHome(force = false)
+            refreshQqMusicHome(force = false)
         }
     }
 
@@ -516,7 +595,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 ytMusicPlaylists = state.ytMusicPlaylists.copy(loading = false, error = null),
                 ytMusicHomeShelves = state.ytMusicHomeShelves.copy(loading = false, error = null),
                 biliMusicRank = state.biliMusicRank.copy(loading = false, error = null),
-                biliMusicHot = state.biliMusicHot.copy(loading = false, error = null)
+                biliMusicHot = state.biliMusicHot.copy(loading = false, error = null),
+                qqMusicHome = state.qqMusicHome.copy(loading = false, error = null)
             )
         }
     }
@@ -528,6 +608,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         radarPlaylistsJob?.cancel()
         cancelYouTubeHomeJobs()
         cancelBiliMusicJobs()
+        cancelQqMusicHomeJob()
     }
 
     private fun cancelYouTubeHomeJobs() {
@@ -544,6 +625,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         biliMusicRankJob = null
         biliMusicHotJob?.cancel()
         biliMusicHotJob = null
+    }
+
+    private fun cancelQqMusicHomeJob() {
+        qqMusicHomeGeneration += 1L
+        qqMusicHomeJob?.cancel()
+        qqMusicHomeJob = null
     }
 
     /** 首页 B 站音乐两个模块的入口（互不阻塞） */
@@ -709,6 +796,100 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun refreshQqMusicHome(force: Boolean = false) {
+        if (
+            offlineMode ||
+            !qqMusicHomeEnabled ||
+            _uiState.value.internationalizationEnabled
+        ) {
+            return
+        }
+        val current = _uiState.value.qqMusicHome
+        if (
+            !force &&
+            (
+                current.loading ||
+                    current.shelves.isNotEmpty() ||
+                    current.playlists.isNotEmpty()
+                )
+        ) {
+            return
+        }
+        val generation = ++qqMusicHomeGeneration
+        qqMusicHomeJob?.cancel()
+        _uiState.update { state ->
+            state.copy(
+                qqMusicHome = state.qqMusicHome.copy(
+                    loading = true,
+                    error = null,
+                    enabled = true
+                )
+            )
+        }
+        qqMusicHomeJob = viewModelScope.launch {
+            when (
+                val result = fetchWithRetry("refreshQqMusicHome", maxAttempts = 2) {
+                    listOf(
+                        withContext(Dispatchers.IO) {
+                            AppContainer.qqMusicClient.getHomeRecommendations()
+                        }
+                    )
+                }
+            ) {
+                is RetryLoadResult.Success -> {
+                    if (generation != qqMusicHomeGeneration) return@launch
+                    val feed = result.items.single()
+                    val shelves = withContext(Dispatchers.Default) {
+                        feed.shelves.mapNotNull { shelf ->
+                            val songs = shelf.songs.map { song -> song.toSongItem() }
+                            if (songs.isEmpty()) {
+                                null
+                            } else {
+                                HomeQqMusicSongShelf(
+                                    title = shelf.title,
+                                    songs = songs
+                                )
+                            }
+                        }
+                    }
+                    NPLogger.d(
+                        TAG,
+                        "refreshQqMusicHome success: shelves=${shelves.size}, " +
+                            "playlists=${feed.playlists.size}"
+                    )
+                    _uiState.update { state ->
+                        state.copy(
+                            qqMusicHome = HomeQqMusicState(
+                                shelves = shelves,
+                                playlists = feed.playlists,
+                                enabled = true
+                            )
+                        )
+                    }
+                }
+                is RetryLoadResult.Failure -> {
+                    if (generation != qqMusicHomeGeneration) return@launch
+                    NPLogger.e(TAG, "refreshQqMusicHome failed", result.throwable)
+                    _uiState.update { state ->
+                        state.copy(
+                            qqMusicHome = state.qqMusicHome.copy(
+                                loading = false,
+                                error = buildHomeErrorText(result.throwable),
+                                enabled = true
+                            )
+                        )
+                    }
+                }
+            }
+        }.also { job ->
+            job.invokeOnCompletion {
+                if (generation == qqMusicHomeGeneration) {
+                    qqMusicHomeJob = null
+                }
+            }
+        }
+    }
+
     fun refreshNeteaseHome() {
         if (offlineMode) return
 
@@ -716,6 +897,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         loadHomeRecommendations(force = true)
         refreshRadarPlaylists()
         loadBiliMusicHomeCoalesced()
+        refreshQqMusicHome(force = true)
     }
 
     /** 拉首页推荐歌单 */

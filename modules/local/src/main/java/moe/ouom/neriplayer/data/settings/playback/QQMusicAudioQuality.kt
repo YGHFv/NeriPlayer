@@ -7,8 +7,15 @@ internal const val DEFAULT_PLAYBACK_QQ_MUSIC_AUDIO_QUALITY = "exhigh"
 
 private val QQ_MUSIC_AUDIO_QUALITIES = setOf(
     "standard",
+    "higher",
     "exhigh",
-    "lossless"
+    "lossless",
+    "hires",
+    "atmos51",
+    "atmos71",
+    "dolby",
+    "dtsx",
+    "master"
 )
 
 fun normalizeQQMusicAudioQuality(value: String?): String {

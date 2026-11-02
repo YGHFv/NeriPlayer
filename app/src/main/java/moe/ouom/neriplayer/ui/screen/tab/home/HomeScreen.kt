@@ -129,6 +129,7 @@ import moe.ouom.neriplayer.core.player.PlayerManager
 import moe.ouom.neriplayer.data.playlist.favorite.FavoritePlaylistRepository
 import moe.ouom.neriplayer.data.local.playlist.LocalPlaylistRepository
 import moe.ouom.neriplayer.data.model.bilibili.music.BiliMusicRankType
+import moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicRecommendationPlaylist
 import moe.ouom.neriplayer.data.model.playlist.LocalPlaylist
 import moe.ouom.neriplayer.data.playlist.usage.PlaylistUsageRepository
 import moe.ouom.neriplayer.data.local.playlist.system.FavoritesPlaylist
@@ -146,10 +147,12 @@ import moe.ouom.neriplayer.ui.viewmodel.playlist.BiliVideoItem
 import moe.ouom.neriplayer.data.model.SongItem
 import moe.ouom.neriplayer.ui.viewmodel.tab.HomeNeteasePlaylistSectionState
 import moe.ouom.neriplayer.ui.viewmodel.tab.HomeNeteaseSongSectionState
+import moe.ouom.neriplayer.ui.viewmodel.tab.HomeQqMusicSongShelf
 import moe.ouom.neriplayer.ui.viewmodel.tab.HomeSectionState
 import moe.ouom.neriplayer.ui.viewmodel.tab.HomeViewModel
 import moe.ouom.neriplayer.ui.viewmodel.tab.NeteaseHomeSongSource
 import moe.ouom.neriplayer.ui.viewmodel.tab.PlaylistSummary
+import moe.ouom.neriplayer.ui.viewmodel.tab.QQMusicPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.YouTubeMusicPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.favoriteId
 import moe.ouom.neriplayer.ui.util.rememberSongDisplayCoverUrl
@@ -175,6 +178,7 @@ fun HomeScreen(
     showRadarCard: Boolean = true,
     showRecommendedCard: Boolean = true,
     showBilibiliCard: Boolean = true,
+    showQqMusicCard: Boolean = true,
     usageEntries: List<UsageEntry> = emptyList(),
     usageLoaded: Boolean = true,
     offlineMode: Boolean = false,
@@ -182,6 +186,7 @@ fun HomeScreen(
     onContinuePagerPageChanged: (Int) -> Unit = {},
     onItemClick: (PlaylistSummary) -> Unit = {},
     onYouTubeMusicPlaylistClick: (YouTubeMusicPlaylist) -> Unit = {},
+    onQqMusicPlaylistClick: (QQMusicPlaylist) -> Unit = {},
     gridState: LazyGridState,
     radarPlaylistListState: LazyListState,
     topAppBarState: TopAppBarState,
@@ -532,6 +537,75 @@ fun HomeScreen(
                         offlineMode = offlineMode
                     )
                 }
+                val addQqMusicSections: LazyGridScope.() -> Unit = qqSections@ {
+                    val qqState = ui.qqMusicHome
+                    if (!showQqMusicCard || !qqState.enabled) return@qqSections
+                    qqState.shelves.forEachIndexed { shelfIndex, shelf ->
+                        addQqMusicSongShelfSection(
+                            sectionKey = homeQqMusicShelfScrollKey(shelfIndex, shelf.title),
+                            registerKey = ::registerGridItemKey,
+                            shelf = shelf,
+                            loadingText = homeLoadingText,
+                            onSongClick = onSongClick,
+                            favoriteSongLookup = favoriteSongLookup,
+                            onFavoriteToggle = ::toggleHomeSongFavorite,
+                            onShowSnackbar = showHomeSnackbar,
+                            offlineMode = offlineMode
+                        )
+                    }
+                    if (qqState.playlists.isNotEmpty()) {
+                        item(
+                            key = registerGridItemKey(HomeScrollKeyQqMusicPlaylistsHeader),
+                            span = { GridItemSpan(maxLineSpan) }
+                        ) {
+                            SectionHeader(
+                                icon = Icons.Outlined.Star,
+                                title = stringResource(CoreCommonR.string.home_qq_music_playlists)
+                            )
+                        }
+                        qqState.playlists.forEach { playlist ->
+                            item(
+                                key = registerGridItemKey(
+                                    homeQqMusicPlaylistScrollKey(playlist.id)
+                                )
+                            ) {
+                                QqMusicRecommendationPlaylistCard(
+                                    playlist = playlist,
+                                    onClick = {
+                                        onQqMusicPlaylistClick(
+                                            QQMusicPlaylist(
+                                                id = playlist.id,
+                                                dirId = 0L,
+                                                title = playlist.name,
+                                                coverUrl = playlist.coverUrl,
+                                                trackCount = playlist.trackCount,
+                                                playCount = playlist.playCount,
+                                                kind = moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicPlaylistKind.FAVORITE
+                                            )
+                                        )
+                                    },
+                                    offlineMode = offlineMode
+                                )
+                            }
+                        }
+                    }
+                    if (qqState.shelves.isEmpty() && qqState.playlists.isEmpty()) {
+                        when {
+                            qqState.loading -> item(
+                                key = registerGridItemKey(HomeScrollKeyQqMusicLoading),
+                                span = { GridItemSpan(maxLineSpan) }
+                            ) {
+                                SectionLoadingState(homeLoadingText)
+                            }
+                            qqState.error != null -> item(
+                                key = registerGridItemKey(HomeScrollKeyQqMusicError),
+                                span = { GridItemSpan(maxLineSpan) }
+                            ) {
+                                SectionErrorState(detail = qqState.error.asString())
+                            }
+                        }
+                    }
+                }
 
                 LazyVerticalGrid(
                     state = gridState,
@@ -861,6 +935,7 @@ fun HomeScreen(
                             // 排在「私人雷达 / 雷达歌单」之后、「热力飙升 / 我的推荐」之前，
                             // 使 B 站榜单与网易云榜单相邻，且不拆散网易云的雷达组合。
                             addBiliMusicSections()
+                            addQqMusicSections()
 
                             if (showNeteaseTrending) {
                                 ui.trendingSongSections.forEach { sectionState ->
@@ -982,6 +1057,52 @@ private fun LazyGridScope.addNeteaseSongSection(
         ) {
             ResponsiveSongPagerList(
                 songs = sectionState.section.items,
+                onSongClick = onSongClick,
+                favoriteSongLookup = favoriteSongLookup,
+                onFavoriteToggle = onFavoriteToggle,
+                onShowSnackbar = onShowSnackbar,
+                offlineMode = offlineMode
+            )
+        }
+    }
+}
+
+private fun LazyGridScope.addQqMusicSongShelfSection(
+    sectionKey: String,
+    registerKey: (String) -> String,
+    shelf: HomeQqMusicSongShelf,
+    loadingText: String,
+    onSongClick: (List<SongItem>, Int) -> Unit,
+    favoriteSongLookup: FavoriteSongLookup,
+    onFavoriteToggle: (SongItem, Boolean) -> Unit,
+    onShowSnackbar: (String) -> Unit,
+    offlineMode: Boolean
+) {
+    item(
+        key = registerKey("$sectionKey:header"),
+        span = { GridItemSpan(maxLineSpan) }
+    ) {
+        SectionHeader(
+            icon = Icons.Outlined.Bolt,
+            title = stringResource(
+                CoreCommonR.string.home_qq_music_recommendation_shelf,
+                shelf.title
+            )
+        )
+    }
+    sectionContent(
+        section = HomeSectionState(items = shelf.songs),
+        loadingText = loadingText,
+        errorDetail = null,
+        keyPrefix = sectionKey,
+        registerKey = registerKey
+    ) {
+        item(
+            key = registerKey("$sectionKey:content"),
+            span = { GridItemSpan(maxLineSpan) }
+        ) {
+            ResponsiveSongPagerList(
+                songs = shelf.songs,
                 onSongClick = onSongClick,
                 favoriteSongLookup = favoriteSongLookup,
                 onFavoriteToggle = onFavoriteToggle,
@@ -1432,6 +1553,71 @@ private fun RadarPlaylistCard(
     }
 }
 
+@Composable
+internal fun QqMusicRecommendationPlaylistCard(
+    playlist: QQMusicRecommendationPlaylist,
+    onClick: () -> Unit,
+    offlineMode: Boolean
+) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier
+            .clip(neriRoundedShape(8.dp))
+            .clickable(onClick = onClick)
+    ) {
+        if (NeriDesign.isClean) {
+            HomeFeaturedArtwork(
+                model = fastScrollableImageRequest(
+                    context = context,
+                    data = playlist.coverUrl,
+                    sizePx = 384,
+                    offlineMode = offlineMode
+                ),
+                title = playlist.name,
+                subtitle = stringResource(
+                    CoreCommonR.string.home_play_count_format,
+                    formatPlayCount(context, playlist.playCount),
+                    playlist.trackCount
+                )
+            )
+        } else {
+            AsyncImage(
+                model = fastScrollableImageRequest(
+                    context = context,
+                    data = playlist.coverUrl,
+                    sizePx = 384,
+                    offlineMode = offlineMode
+                ),
+                contentDescription = playlist.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(neriRoundedShape(8.dp))
+            )
+            Column(modifier = Modifier.padding(top = 6.dp, start = 4.dp, end = 4.dp, bottom = 4.dp)) {
+                Text(
+                    text = playlist.name,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Text(
+                    text = stringResource(
+                        CoreCommonR.string.home_play_count_format,
+                        formatPlayCount(context, playlist.playCount),
+                        playlist.trackCount
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Clip
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlaylistCard(
@@ -1739,7 +1925,7 @@ private fun LazyGridScope.addYouTubeMusicSongShelfSection(
 }
 
 @Composable
-private fun ResponsiveSongPagerList(
+internal fun ResponsiveSongPagerList(
     songs: List<SongItem>,
     onSongClick: (List<SongItem>, Int) -> Unit,
     favoriteSongLookup: FavoriteSongLookup,

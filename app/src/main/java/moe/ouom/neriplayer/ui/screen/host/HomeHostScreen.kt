@@ -66,6 +66,7 @@ import moe.ouom.neriplayer.ui.screen.playlist.LocalArtistDetailScreen
 import moe.ouom.neriplayer.ui.screen.playlist.LocalPlaylistDetailScreen
 import moe.ouom.neriplayer.ui.screen.playlist.NeteaseAlbumDetailScreen
 import moe.ouom.neriplayer.ui.screen.playlist.NeteasePlaylistDetailScreen
+import moe.ouom.neriplayer.ui.screen.playlist.QQMusicPlaylistDetailScreen
 import moe.ouom.neriplayer.ui.screen.playlist.YouTubeMusicPlaylistDetailScreen
 import moe.ouom.neriplayer.ui.screen.tab.home.HomeScreen
 import moe.ouom.neriplayer.ui.effect.glass.AdvancedGlassSceneMotion
@@ -79,11 +80,13 @@ import moe.ouom.neriplayer.data.model.SongItem
 import moe.ouom.neriplayer.ui.viewmodel.tab.AlbumSummary
 import moe.ouom.neriplayer.ui.viewmodel.tab.BiliPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.PlaylistSummary
+import moe.ouom.neriplayer.ui.viewmodel.tab.QQMusicPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.tab.YouTubeMusicPlaylist
 import moe.ouom.neriplayer.ui.viewmodel.playlist.BiliVideoItem
 import moe.ouom.neriplayer.ui.util.restoreBiliPlaylist
 import moe.ouom.neriplayer.ui.util.restoreAlbumSummary
 import moe.ouom.neriplayer.ui.util.restorePlaylistSummary
+import moe.ouom.neriplayer.ui.util.restoreQQMusicPlaylist
 import moe.ouom.neriplayer.ui.util.restoreYouTubeMusicPlaylist
 import moe.ouom.neriplayer.ui.util.SAVED_TYPE_KEY
 import moe.ouom.neriplayer.ui.util.biliPlaylistKindOrDefault
@@ -115,6 +118,9 @@ internal sealed class HomeSelectedItem {
     }
     data class YouTubeMusic(val playlist: YouTubeMusicPlaylist) : HomeSelectedItem() {
         override fun saveState() = hashMapOf(SAVED_TYPE_KEY to "ytmusic", "playlist" to playlist.toSaveMap())
+    }
+    data class QqMusic(val playlist: QQMusicPlaylist) : HomeSelectedItem() {
+        override fun saveState() = hashMapOf(SAVED_TYPE_KEY to "qqmusic", "playlist" to playlist.toSaveMap())
     }
     // Bilibili 音乐模块的详情页复用首页同一个 HomeViewModel，因此这里不需要携带额外参数。
     // 榜单类型（热门榜 / 原创榜）不放在这里：它是详情页内部可切换的展示状态，若并入导航身份，
@@ -168,6 +174,7 @@ fun HomeHostScreen(
     showRadarCard: Boolean = true,
     showRecommendedCard: Boolean = true,
     showBilibiliCard: Boolean = true,
+    showQqMusicCard: Boolean = true,
     homeUsageEntries: List<UsageEntry> = emptyList(),
     homeUsageLoaded: Boolean = true,
     offlineMode: Boolean = false,
@@ -418,6 +425,7 @@ fun HomeHostScreen(
                                 showRadarCard = showRadarCard,
                                 showRecommendedCard = showRecommendedCard,
                                 showBilibiliCard = showBilibiliCard,
+                                showQqMusicCard = showQqMusicCard,
                                 usageEntries = homeUsageEntries,
                                 usageLoaded = homeUsageLoaded,
                                 offlineMode = offlineMode,
@@ -464,6 +472,20 @@ fun HomeHostScreen(
                                         )
                                     }
                                     openHomeSelectedItem(HomeSelectedItem.YouTubeMusic(pl))
+                                },
+                                onQqMusicPlaylistClick = { pl ->
+                                    skipDetailCloseAnimation = false
+                                    captureHomeScrollPosition()
+                                    AppContainer.launchBackgroundIo {
+                                        AppContainer.playlistUsageRepo.recordOpen(
+                                            id = pl.id,
+                                            name = pl.title,
+                                            picUrl = pl.coverUrl,
+                                            trackCount = pl.trackCount,
+                                            source = "qqmusic"
+                                        )
+                                    }
+                                    openHomeSelectedItem(HomeSelectedItem.QqMusic(pl))
                                 },
                                 onOpenRecent = { entry ->
                                     skipDetailCloseAnimation = false
@@ -596,6 +618,15 @@ fun HomeHostScreen(
                                 )
                             }
 
+                            is HomeSelectedItem.QqMusic -> {
+                                QQMusicPlaylistDetailScreen(
+                                    playlist = current.playlist,
+                                    onBack = { selected = null },
+                                    onSongClick = onSongClick,
+                                    offlineMode = offlineMode
+                                )
+                            }
+
                             is HomeSelectedItem.BiliMusicRank -> {
                                 BiliMusicRankDetailScreen(
                                     onBack = { selected = null },
@@ -637,6 +668,7 @@ private val homeSelectedItemRestorers: Map<String, (Map<String, Any?>) -> HomeSe
     "netease" to { saved -> restorePlaylistSummary(saved.savedMap("playlist"))?.let(HomeSelectedItem::Netease) },
     "bili" to { saved -> restoreBiliPlaylist(saved.savedMap("playlist"))?.let(HomeSelectedItem::Bili) },
     "ytmusic" to { saved -> restoreYouTubeMusicPlaylist(saved.savedMap("playlist"))?.let(HomeSelectedItem::YouTubeMusic) },
+    "qqmusic" to { saved -> restoreQQMusicPlaylist(saved.savedMap("playlist"))?.let(HomeSelectedItem::QqMusic) },
     "biliMusicRank" to { _ -> HomeSelectedItem.BiliMusicRank },
     "biliMusicHot" to { _ -> HomeSelectedItem.BiliMusicHot }
 )
@@ -668,7 +700,8 @@ private val recentSelectedItemFactories: Map<String, (UsageEntry) -> HomeSelecte
     "local" to { entry -> HomeSelectedItem.Local(entry.id) },
     PlaylistUsageRepository.SOURCE_LOCAL_ARTIST.lowercase() to { entry -> HomeSelectedItem.LocalArtist(entry.name) },
     "bili" to ::recentBiliItem,
-    "youtubemusic" to ::recentYouTubeMusicItem
+    "youtubemusic" to ::recentYouTubeMusicItem,
+    "qqmusic" to ::recentQqMusicItem
 )
 
 private fun recentNeteaseItem(entry: UsageEntry): HomeSelectedItem = HomeSelectedItem.Netease(
@@ -716,6 +749,18 @@ private fun recentYouTubeMusicItem(entry: UsageEntry): HomeSelectedItem? {
         )
     )
 }
+
+private fun recentQqMusicItem(entry: UsageEntry): HomeSelectedItem = HomeSelectedItem.QqMusic(
+    QQMusicPlaylist(
+        id = entry.id,
+        dirId = 0L,
+        title = entry.name,
+        coverUrl = entry.picUrl.orEmpty(),
+        trackCount = entry.trackCount,
+        playCount = 0L,
+        kind = moe.ouom.neriplayer.data.model.qqmusic.library.QQMusicPlaylistKind.FAVORITE
+    )
+)
 
 private fun recentYouTubeMusicBrowseId(entry: UsageEntry): String? =
     entry.browseId?.takeIf(String::isNotBlank)

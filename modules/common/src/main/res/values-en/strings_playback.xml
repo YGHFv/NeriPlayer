@@ -52,6 +52,13 @@
     <string name="quality_high">High</string>
     <string name="quality_very_high">Very High</string>
     <string name="quality_lossless">Lossless</string>
+    <string name="quality_qq_music_master">Master</string>
+    <string name="quality_qq_music_hires">Premium Sound</string>
+    <string name="quality_qq_music_hq_192">HQ 192K</string>
+    <string name="quality_qq_music_hq_320">HQ 320K</string>
+    <string name="quality_qq_music_atmos_51">Premium Spatial 5.1</string>
+    <string name="quality_qq_music_atmos_71">Premium Spatial 7.1</string>
+    <string name="quality_qq_music_dtsx">DTS:X</string>
     <string name="quality_hires">Hi-Res</string>
     <string name="quality_dolby">Dolby Atmos</string>
     <string name="quality_surround">Immersive Surround</string>

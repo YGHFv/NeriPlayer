@@ -83,6 +83,8 @@ import moe.ouom.neriplayer.ksp.annotations.AutoSettingSpec
 import moe.ouom.neriplayer.ui.screen.tab.settings.miuix.MiuixSettingsSlider
 import moe.ouom.neriplayer.ui.screen.tab.settings.miuix.MiuixSettingsTextButton
 import moe.ouom.neriplayer.ui.screen.tab.settings.page.MiuixSettingsSectionCard
+import moe.ouom.neriplayer.ui.screen.tab.settings.playback.qqMusicQualityLabelText
+import moe.ouom.neriplayer.ui.screen.tab.settings.playback.qqMusicQualityOptions
 import moe.ouom.neriplayer.R as AppR
 
 @Composable
@@ -445,12 +447,8 @@ private fun DownloadAudioQualitySettings(
             DownloadAudioQualityListItem(
                 setting = qqMusicSetting,
                 value = normalizeDownloadQQMusicAudioQuality(qqMusicQuality),
-                valueLabel = stringResource(
-                    when (normalizeDownloadQQMusicAudioQuality(qqMusicQuality)) {
-                        "standard" -> CoreCommonR.string.quality_standard
-                        "lossless" -> CoreCommonR.string.quality_lossless
-                        else -> CoreCommonR.string.quality_very_high
-                    }
+                valueLabel = qqMusicQualityLabelText(
+                    normalizeDownloadQQMusicAudioQuality(qqMusicQuality)
                 ),
                 onClick = { dialogPlatform = DownloadAudioQualityPlatform.QQ_MUSIC },
                 highlightTargetId = highlightTargetId,
@@ -526,11 +524,7 @@ private fun DownloadAudioQualitySettings(
                 QualityOptionsDialog(
                     title = stringResource(CoreCommonR.string.settings_download_qq_music_audio_quality),
                     selectedValue = normalizeDownloadQQMusicAudioQuality(qqMusicQuality),
-                    options = listOf(
-                        "lossless" to stringResource(CoreCommonR.string.quality_lossless),
-                        "exhigh" to stringResource(CoreCommonR.string.quality_very_high),
-                        "standard" to stringResource(CoreCommonR.string.quality_standard)
-                    ),
+                    options = qqMusicQualityOptions(),
                     onDismiss = { dialogPlatform = null },
                     onSelect = { value ->
                         dialogPlatform = null

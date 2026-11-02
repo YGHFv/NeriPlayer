@@ -59,6 +59,7 @@ import moe.ouom.neriplayer.ui.screen.tab.settings.miuix.MiuixSettingsChoiceRow
 import moe.ouom.neriplayer.ui.screen.tab.settings.miuix.MiuixSettingsDialog
 import moe.ouom.neriplayer.ui.screen.tab.settings.miuix.MiuixSettingsSwitch
 import moe.ouom.neriplayer.ui.screen.tab.settings.miuix.MiuixSettingsTextButton
+import moe.ouom.neriplayer.ui.screen.tab.settings.playback.qqMusicQualityOptions
 import moe.ouom.neriplayer.R as AppR
 
 private const val NETEASE_LOSSLESS_QUALITY = "lossless"
@@ -348,11 +349,7 @@ internal fun SettingsAudioQualitySection(
         QualityOptionsDialog(
             title = stringResource(CoreCommonR.string.quality_qq_music_default),
             selectedValue = qqMusicPreferredQuality,
-            options = listOf(
-                "standard" to stringResource(CoreCommonR.string.quality_standard),
-                "exhigh" to stringResource(CoreCommonR.string.quality_very_high),
-                "lossless" to stringResource(CoreCommonR.string.quality_lossless)
-            ),
+            options = qqMusicQualityOptions(),
             onDismiss = { onShowQqMusicQualityDialogChange(false) },
             onSelect = { level ->
                 onQqMusicQualityChange(level)
@@ -431,11 +428,7 @@ internal fun SettingsAudioQualitySection(
         QualityOptionsDialog(
             title = stringResource(CoreCommonR.string.settings_mobile_data_qq_music_audio_quality),
             selectedValue = mobileDataQqMusicAudioQuality,
-            options = listOf(
-                "standard" to stringResource(CoreCommonR.string.quality_standard),
-                "exhigh" to stringResource(CoreCommonR.string.quality_very_high),
-                "lossless" to stringResource(CoreCommonR.string.quality_lossless)
-            ),
+            options = qqMusicQualityOptions(),
             onDismiss = { onShowMobileDataQqMusicQualityDialogChange(false) },
             onSelect = { level ->
                 onMobileDataQqMusicAudioQualityChange(level)

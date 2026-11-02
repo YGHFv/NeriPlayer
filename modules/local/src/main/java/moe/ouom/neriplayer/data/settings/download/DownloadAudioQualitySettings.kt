@@ -47,8 +47,15 @@ private val DOWNLOAD_BILI_AUDIO_QUALITIES = setOf(
 
 private val DOWNLOAD_QQ_MUSIC_AUDIO_QUALITIES = setOf(
     "standard",
+    "higher",
     "exhigh",
-    "lossless"
+    "lossless",
+    "hires",
+    "atmos51",
+    "atmos71",
+    "dolby",
+    "dtsx",
+    "master"
 )
 
 fun normalizeDownloadNeteaseAudioQuality(value: String?): String {

@@ -23,6 +23,32 @@ class PlayerUrlResolverIdentityTest {
     }
 
     @Test
+    fun `qq music master quality has a localized label`() {
+        assertEquals(
+            "res:${CoreCommonR.string.quality_qq_music_master}",
+            qualityLabelForQqMusic("master", localized)
+        )
+    }
+
+    @Test
+    fun `qq music quality labels cover every playback tier`() {
+        mapOf(
+            "standard" to CoreCommonR.string.quality_standard,
+            "higher" to CoreCommonR.string.quality_qq_music_hq_192,
+            "exhigh" to CoreCommonR.string.quality_qq_music_hq_320,
+            "lossless" to CoreCommonR.string.quality_lossless,
+            "hires" to CoreCommonR.string.quality_qq_music_hires,
+            "atmos51" to CoreCommonR.string.quality_qq_music_atmos_51,
+            "atmos71" to CoreCommonR.string.quality_qq_music_atmos_71,
+            "dolby" to CoreCommonR.string.quality_dolby,
+            "dtsx" to CoreCommonR.string.quality_qq_music_dtsx,
+            "master" to CoreCommonR.string.quality_qq_music_master
+        ).forEach { (key, resId) ->
+            assertEquals("res:$resId", qualityLabelForQqMusic(key, localized))
+        }
+    }
+
+    @Test
     fun `netease quality labels are localized for every known level`() {
         mapOf(
             "standard" to CoreCommonR.string.quality_standard,
