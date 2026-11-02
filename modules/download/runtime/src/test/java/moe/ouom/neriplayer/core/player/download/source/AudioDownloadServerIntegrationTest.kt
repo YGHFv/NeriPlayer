@@ -117,7 +117,9 @@ class AudioDownloadServerIntegrationTest {
                 qqMusicClient.getPlaybackStream(
                     songMid = "song-mid",
                     mediaMid = "media-mid",
-                    preferredQuality = "lossless"
+                    preferredQuality = "lossless",
+                    probeCandidates = false,
+                    allowPreview = false
                 )
             ).thenReturn(
                 QQMusicAudioStream(
