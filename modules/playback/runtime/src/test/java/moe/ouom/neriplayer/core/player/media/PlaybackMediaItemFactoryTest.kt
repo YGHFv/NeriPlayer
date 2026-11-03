@@ -74,6 +74,30 @@ class PlaybackMediaItemFactoryTest {
     }
 
     @Test
+    fun `qq music cache key normalizes mid and quality inputs`() {
+        assertEquals(
+            "qqmusic-Media MID-lossless",
+            PlaybackMediaItemFactory.qqMusicSongCacheKey(song(audioId = "  Media MID  "), "  LOSSLESS ")
+        )
+        assertEquals(
+            "qqmusic-Media MID-exhigh",
+            PlaybackMediaItemFactory.qqMusicSongCacheKey(song(audioId = "Media MID"), "   ")
+        )
+    }
+
+    @Test
+    fun `qq music cache key falls back to song id for missing or blank mids`() {
+        assertEquals(
+            "qqmusic-42-lossless",
+            PlaybackMediaItemFactory.qqMusicSongCacheKey(song(id = 42L, audioId = null), "lossless")
+        )
+        assertEquals(
+            "qqmusic-43-lossless",
+            PlaybackMediaItemFactory.qqMusicSongCacheKey(song(id = 43L, audioId = "   "), "lossless")
+        )
+    }
+
+    @Test
     fun `media item strips transport fragment and keeps cache key only for remote media`() {
         val remoteUrl = "https://cdn.example.org/audio.m4a"
         val remoteWithQuality = "$remoteUrl#neriplayer-ltw-quality=netease:high"
