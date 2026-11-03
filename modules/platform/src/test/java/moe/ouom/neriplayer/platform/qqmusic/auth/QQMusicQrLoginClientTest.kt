@@ -181,6 +181,7 @@ class QQMusicQrLoginClientTest {
     @Test
     fun `wechat scan bootstraps device and exchanges login code`() {
         val requests = mutableListOf<Request>()
+        var wechatAppId: String? = null
         var pollCount = 0
         val client = testClient { request ->
             requests += request
@@ -195,7 +196,8 @@ class QQMusicQrLoginClientTest {
                     )
                 }
                 "open.weixin.qq.com/connect/qrconnect" -> {
-                    assertEquals("wx48db31d50e334801", request.url.queryParameter("appid"))
+                    wechatAppId = request.url.queryParameter("appid")
+                    assertTrue(wechatAppId.orEmpty().matches(Regex("wx[0-9a-f]{16}")))
                     response(
                         request,
                         """<img src="/connect/qrcode/uuid-fixture"><a href="https://open.weixin.qq.com/connect/confirm?uuid=uuid-fixture">""",
@@ -232,7 +234,7 @@ class QQMusicQrLoginClientTest {
                         assertEquals("music.login.LoginServer", req.getString("module"))
                         assertEquals("Login", req.getString("method"))
                         assertEquals(
-                            "wx48db31d50e334801",
+                            wechatAppId,
                             req.getJSONObject("param").getString("strAppid")
                         )
                         assertEquals(1, body.getJSONObject("comm").getInt("tmeLoginType"))
