@@ -33,11 +33,18 @@ internal fun youtubeQualityLabelRes(value: String): Int? = when (value) {
 internal fun biliQualityLabelRes(value: String): Int? =
     biliPremiumQualityLabelRes(value) ?: biliRegularQualityLabelRes(value)
 
-internal fun qqMusicQualityLabelRes(value: String): Int? = when (value) {
+internal fun qqMusicQualityLabelRes(value: String): Int? =
+    qqMusicBaseQualityLabelRes(value) ?: qqMusicPremiumQualityLabelRes(value)
+
+private fun qqMusicBaseQualityLabelRes(value: String): Int? = when (value) {
     "standard" -> CoreCommonR.string.settings_audio_quality_standard
     "higher" -> CoreCommonR.string.quality_qq_music_hq_192
     "exhigh" -> CoreCommonR.string.quality_qq_music_hq_320
     "lossless" -> CoreCommonR.string.quality_lossless
+    else -> null
+}
+
+private fun qqMusicPremiumQualityLabelRes(value: String): Int? = when (value) {
     "hires" -> CoreCommonR.string.quality_qq_music_hires
     "atmos51" -> CoreCommonR.string.quality_qq_music_atmos_51
     "atmos71" -> CoreCommonR.string.quality_qq_music_atmos_71
@@ -49,7 +56,11 @@ internal fun qqMusicQualityLabelRes(value: String): Int? = when (value) {
 
 @Composable
 internal fun qqMusicQualityLabelText(value: String): String =
-    qqMusicQualityLabelRes(value)?.let { stringResource(it) } ?: value
+    qqMusicQualityText(value, qqMusicQualityLabelRes(value))
+
+@Composable
+private fun qqMusicQualityText(value: String, labelRes: Int?): String =
+    if (labelRes == null) value else stringResource(labelRes)
 
 @Composable
 internal fun qqMusicQualityOptions(): List<Pair<String, String>> = listOf(

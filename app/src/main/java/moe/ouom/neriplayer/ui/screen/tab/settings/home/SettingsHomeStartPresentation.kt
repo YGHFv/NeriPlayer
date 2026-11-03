@@ -44,10 +44,23 @@ internal fun isSettingsHomeStartAvailable(
     showBilibili: Boolean = false,
     internationalEnabled: Boolean = false,
     showQqMusic: Boolean = false
-): Boolean = showTrending || showRadar || showRecommended ||
-    (showBilibili && !internationalEnabled) ||
-    (showQqMusic && !internationalEnabled) ||
-    (showContinue && hasRecentUsage)
+): Boolean =
+    hasConfiguredHomeSection(showTrending, showRadar, showRecommended, showContinue, hasRecentUsage) ||
+        hasRegionalDiscoveryHomeSection(showBilibili, showQqMusic, internationalEnabled)
+
+private fun hasConfiguredHomeSection(
+    showTrending: Boolean,
+    showRadar: Boolean,
+    showRecommended: Boolean,
+    showContinue: Boolean,
+    hasRecentUsage: Boolean
+): Boolean = showTrending || showRadar || showRecommended || (showContinue && hasRecentUsage)
+
+private fun hasRegionalDiscoveryHomeSection(
+    showBilibili: Boolean,
+    showQqMusic: Boolean,
+    internationalEnabled: Boolean
+): Boolean = (showBilibili || showQqMusic) && !internationalEnabled
 
 internal fun effectiveSettingsStartDestination(
     configured: String,
