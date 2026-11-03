@@ -18,7 +18,7 @@ class LibraryTabOrderTest {
     @Test
     fun `international users see YouTube Music before Netease`() {
         assertEquals(
-            listOf(LOCAL, FAVORITE, YTMUSIC, NETEASE, BILI, MY_MUSIC),
+            listOf(LOCAL, FAVORITE, YTMUSIC, NETEASE, BILI, QQMUSIC, MY_MUSIC),
             libraryTabDisplayOrder(isInternational = true, youtubeEnabled = true)
         )
     }
@@ -26,14 +26,14 @@ class LibraryTabOrderTest {
     @Test
     fun `domestic users see Netease before YouTube Music`() {
         assertEquals(
-            listOf(LOCAL, FAVORITE, NETEASE, YTMUSIC, BILI, MY_MUSIC),
+            listOf(LOCAL, FAVORITE, NETEASE, YTMUSIC, BILI, QQMUSIC, MY_MUSIC),
             libraryTabDisplayOrder(isInternational = false, youtubeEnabled = true)
         )
     }
 
     @Test
     fun `disabled YouTube removes its tab for every region`() {
-        val expected = listOf(LOCAL, FAVORITE, NETEASE, BILI, MY_MUSIC)
+        val expected = listOf(LOCAL, FAVORITE, NETEASE, BILI, QQMUSIC, MY_MUSIC)
 
         assertEquals(expected, libraryTabDisplayOrder(isInternational = true, youtubeEnabled = false))
         assertEquals(expected, libraryTabDisplayOrder(isInternational = false, youtubeEnabled = false))
@@ -41,14 +41,14 @@ class LibraryTabOrderTest {
 
     @Test
     fun `remote catalogue tabs are refreshable including the Netease album sub tab`() {
-        listOf(BILI, YTMUSIC, NETEASE, NETEASEALBUM).forEach { tab ->
+        listOf(BILI, YTMUSIC, NETEASE, NETEASEALBUM, QQMUSIC).forEach { tab ->
             assertTrue("$tab should be refreshable", tab.isRefreshable())
         }
     }
 
     @Test
     fun `local tabs and a missing tab are not refreshable`() {
-        listOf(LOCAL, FAVORITE, QQMUSIC, MY_MUSIC, null).forEach { tab ->
+        listOf(LOCAL, FAVORITE, MY_MUSIC, null).forEach { tab ->
             assertFalse("$tab should not be refreshable", tab.isRefreshable())
         }
     }
